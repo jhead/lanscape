@@ -18,7 +18,9 @@ import {
   base64URLToArrayBuffer,
 } from './webauthn'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Use relative URL when behind reverse proxy (docker-compose), or use env var if set
+// Empty string means relative URLs, which works when webui and API are on same origin
+const API_BASE_URL = import.meta.env.VITE_API_URL || ''
 
 // Check authentication status
 export async function checkAuthStatus(): Promise<boolean> {
