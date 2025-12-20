@@ -163,8 +163,12 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// API v1 routes
 	mux.HandleFunc("POST /v1/register", routes.HandleRegister)
-	mux.HandleFunc("POST /v1/devices/adopt", routes.HandleAdoptDevice)
 	mux.HandleFunc("GET /v1/me", routes.HandleMe)
+
+	// Device routes (require JWT)
+	mux.Handle("POST /v1/devices/adopt", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		routes.HandleAdoptDevice(w, r, s.store)
+	})))
 
 	log.Println("Routes registered")
 }

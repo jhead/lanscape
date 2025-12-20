@@ -316,35 +316,50 @@ button:disabled {
 
 .network-actions {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
 }
 
 .network-actions button {
-  width: auto !important;
+  width: 100% !important;
   padding: 0.5rem 1rem !important;
   font-size: 0.875rem !important;
 }
 
 .join-btn {
-  background: #3b82f6 !important;
-  border-color: #60a5fa !important;
-  color: #ffffff !important;
+  background: #27272a !important;
+  border-color: #3f3f46 !important;
+  color: #e4e4e7 !important;
 }
 
 .join-btn:hover:not(:disabled) {
-  background: #60a5fa !important;
-  border-color: #93c5fd !important;
-}
-
-.delete-btn {
-  background: #dc2626 !important;
-  border-color: #ef4444 !important;
+  background: #3f3f46 !important;
+  border-color: #52525b !important;
   color: #ffffff !important;
 }
 
+.add-device-btn {
+  background: #27272a !important;
+  border-color: #3f3f46 !important;
+  color: #e4e4e7 !important;
+}
+
+.add-device-btn:hover:not(:disabled) {
+  background: #3f3f46 !important;
+  border-color: #52525b !important;
+  color: #ffffff !important;
+}
+
+.delete-btn {
+  background: #27272a !important;
+  border-color: #3f3f46 !important;
+  color: #e4e4e7 !important;
+}
+
 .delete-btn:hover:not(:disabled) {
-  background: #ef4444 !important;
-  border-color: #f87171 !important;
+  background: #3f3f46 !important;
+  border-color: #52525b !important;
+  color: #f87171 !important;
 }
 
 .empty-state {

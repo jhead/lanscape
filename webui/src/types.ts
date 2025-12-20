@@ -49,4 +49,15 @@ export interface ListNetworksResponse {
   networks: Network[]
 }
 
+export interface AdoptDeviceRequest {
+  network_id: number
+  name?: string
+  platform?: string
+}
+
+export interface AdoptDeviceResponse {
+  preauth_key: string
+  headscale_endpoint: string
+}
+
 export type StatusType = 'info' | 'success' | 'error' | null

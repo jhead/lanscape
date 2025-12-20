@@ -8,6 +8,8 @@ import type {
   Network,
   CreateNetworkRequest,
   ListNetworksResponse,
+  AdoptDeviceRequest,
+  AdoptDeviceResponse,
 } from '../types'
 import {
   convertCreateOptions,
@@ -261,5 +263,31 @@ export async function logoutUser(): Promise<LogoutResponse> {
 
   const result = await response.json()
   console.log('[API] Logout completed:', result.success)
+  return result
+}
+
+// Adopt device (create preauth key)
+export async function adoptDevice(networkId: number, name?: string, platform?: string): Promise<AdoptDeviceResponse> {
+  console.log('[API] Adopting device for network:', networkId)
+  const response = await fetch(`${API_BASE_URL}/v1/devices/adopt`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+    body: JSON.stringify({
+      network_id: networkId,
+      name,
+      platform,
+    } as AdoptDeviceRequest),
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(errorText || 'Failed to adopt device')
+  }
+
+  const result = await response.json()
+  console.log('[API] Device adoption completed, preauth key created')
   return result
 }
