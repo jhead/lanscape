@@ -1,8 +1,11 @@
 # Build stage
-FROM golang:1.25-alpine AS builder
+FROM golang:1.25 AS builder
 
-# Install build dependencies
-RUN apk add --no-cache git gcc musl-dev sqlite-dev
+# Install build dependencies for CGO (sqlite3)
+RUN apt-get update && apt-get install -y \
+    gcc \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /build
 
@@ -17,7 +20,9 @@ COPY . .
 
 # Build the binary
 # CGO_ENABLED=1 is required for sqlite3
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build \
+# Docker Buildx will build natively for each platform, so we don't need to set GOOS/GOARCH
+# This avoids CGO cross-compilation issues
+RUN CGO_ENABLED=1 go build \
     -ldflags="-w -s" \
     -o lanscaped \
     ./cmd/lanscaped.go
