@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { checkAuthStatus } from '../utils/api'
+import { checkAuthStatus, logoutUser } from '../utils/api'
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -36,12 +36,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     initAuth()
   }, [])
 
-  const logout = () => {
-    // Clear the JWT cookie by setting it to expire
-    document.cookie = 'jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
-    setAuthenticated(false)
-    setUsername('')
-    setHeadscaleOnboarded(false)
+  const logout = async () => {
+    try {
+      // Call the logout endpoint to clear the JWT cookie on the server
+      await logoutUser()
+      console.log('[Auth] Logout successful')
+    } catch (error) {
+      console.error('[Auth] Logout error:', error)
+      // Continue with local state cleanup even if API call fails
+    } finally {
+      // Clear local state regardless of API call result
+      setAuthenticated(false)
+      setUsername('')
+      setHeadscaleOnboarded(false)
+    }
   }
 
   if (loading) {

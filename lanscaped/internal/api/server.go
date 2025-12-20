@@ -149,6 +149,9 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 		routes.HandleFinishLogin(w, r, s.webauthnService, s.store, s.jwtService)
 	})
 
+	// Auth routes
+	mux.HandleFunc("POST /v1/auth/logout", routes.HandleLogout)
+
 	// Protected routes (require JWT)
 	jwtMiddleware := middleware.JWTAuthMiddleware(s.jwtService)
 	mux.Handle("GET /v1/auth/test", jwtMiddleware(http.HandlerFunc(routes.HandleAuthTest)))

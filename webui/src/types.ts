@@ -27,6 +27,11 @@ export interface AuthTestResponse {
   message: string
 }
 
+export interface LogoutResponse {
+  success: boolean
+  message: string
+}
+
 export interface OnboardHeadscaleResponse {
   success: boolean
   message: string

@@ -4,6 +4,7 @@ import type {
   BeginLoginResponse,
   FinishLoginResponse,
   AuthTestResponse,
+  LogoutResponse,
   OnboardHeadscaleResponse,
   Network,
   CreateNetworkRequest,
@@ -261,5 +262,26 @@ export async function onboardHeadscale(): Promise<OnboardHeadscaleResponse> {
 
   const result = await response.json()
   console.log('[API] Onboarding completed:', result.success)
+  return result
+}
+
+// Logout user
+export async function logoutUser(): Promise<LogoutResponse> {
+  console.log('[API] Logging out...')
+  const response = await fetch(`${API_BASE_URL}/v1/auth/logout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    const errorText = await response.text()
+    throw new Error(`Failed to logout: ${errorText}`)
+  }
+
+  const result = await response.json()
+  console.log('[API] Logout completed:', result.success)
   return result
 }
