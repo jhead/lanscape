@@ -106,7 +106,7 @@ func corsMiddleware(next http.Handler) http.Handler {
 			origin = "*"
 		}
 		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
 
@@ -154,6 +154,20 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	mux.Handle("GET /v1/auth/test", jwtMiddleware(http.HandlerFunc(routes.HandleAuthTest)))
 	mux.Handle("POST /v1/headscale/onboard", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		routes.HandleOnboardHeadscale(w, r, s.store, s.headscaleClient)
+	})))
+
+	// Network routes (require JWT)
+	mux.Handle("POST /v1/networks", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		routes.HandleCreateNetwork(w, r, s.store)
+	})))
+	mux.Handle("GET /v1/networks", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		routes.HandleListNetworks(w, r, s.store)
+	})))
+	mux.Handle("PUT /v1/networks/{id}/join", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		routes.HandleJoinNetwork(w, r, s.store)
+	})))
+	mux.Handle("DELETE /v1/networks/{id}", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		routes.HandleDeleteNetwork(w, r, s.store)
 	})))
 
 	// API v1 routes

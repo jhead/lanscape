@@ -70,6 +70,24 @@ func (s *Store) migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_webauthn_credentials_user_id ON webauthn_credentials(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_webauthn_credentials_credential_id ON webauthn_credentials(credential_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_webauthn_sessions_expires_at ON webauthn_sessions(expires_at)`,
+		`CREATE TABLE IF NOT EXISTS networks (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL UNIQUE,
+			headscale_endpoint TEXT NOT NULL,
+			api_key TEXT,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS memberships (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			network_id INTEGER NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(user_id, network_id),
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (network_id) REFERENCES networks(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_memberships_user_id ON memberships(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_memberships_network_id ON memberships(network_id)`,
 	}
 
 	for _, query := range queries {
@@ -102,6 +120,17 @@ func (s *Store) migrate() error {
 		if _, err := s.db.Exec("ALTER TABLE users ADD COLUMN headscale_onboarded INTEGER NOT NULL DEFAULT 0"); err != nil {
 			// Column might already exist, log but don't fail
 			log.Printf("Note: headscale_onboarded column migration: %v", err)
+		}
+	}
+
+	// Migrate networks table to add api_key column if it doesn't exist
+	var networkCount int
+	err = s.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('networks') WHERE name='api_key'").Scan(&networkCount)
+	if err == nil && networkCount == 0 {
+		log.Println("Adding api_key column to networks table")
+		if _, err := s.db.Exec("ALTER TABLE networks ADD COLUMN api_key TEXT"); err != nil {
+			// Column might already exist, log but don't fail
+			log.Printf("Note: api_key column migration: %v", err)
 		}
 	}
 

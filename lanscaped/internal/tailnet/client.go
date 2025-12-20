@@ -18,7 +18,7 @@ type Client struct {
 	httpClient *http.Client
 }
 
-// NewClient creates a new Headscale client
+// NewClient creates a new Headscale client with default endpoint from environment
 func NewClient() (*Client, error) {
 	endpoint := os.Getenv("HEADSCALE_ENDPOINT")
 	if endpoint == "" {
@@ -29,13 +29,19 @@ func NewClient() (*Client, error) {
 
 	log.Printf("Headscale client initialized with endpoint: %s", endpoint)
 
+	return NewClientWithEndpoint(endpoint, apiKey), nil
+}
+
+// NewClientWithEndpoint creates a new Headscale client with a specific endpoint
+func NewClientWithEndpoint(endpoint, apiKey string) *Client {
+	log.Printf("Headscale client initialized with endpoint: %s", endpoint)
 	return &Client{
 		baseURL: endpoint,
 		apiKey:  apiKey,
 		httpClient: &http.Client{
 			Timeout: 10 * time.Second,
 		},
-	}, nil
+	}
 }
 
 // CreateUserRequest represents the request to create a user in Headscale
