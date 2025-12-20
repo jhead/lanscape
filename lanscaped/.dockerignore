@@ -1,0 +1,10 @@
+.git
+.gitignore
+*.md
+lanscaped
+.env
+.env.local
+.DS_Store
+*.db
+*.sqlite
+*.sqlite3
