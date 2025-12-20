@@ -97,7 +97,7 @@ func (s *Store) ListNetworks() ([]*Network, error) {
 		var network Network
 		var createdAt string
 
-		if err := rows.Scan(&network.ID, &network.Name, &network.HeadscaleEndpoint, &createdAt); err != nil {
+		if err := rows.Scan(&network.ID, &network.Name, &network.HeadscaleEndpoint, &network.APIKey, &createdAt); err != nil {
 			return nil, fmt.Errorf("failed to scan network: %w", err)
 		}
 
