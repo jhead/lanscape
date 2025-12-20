@@ -4,10 +4,8 @@ import { checkAuthStatus, logoutUser } from '../utils/api'
 interface AuthContextType {
   isAuthenticated: boolean
   username: string
-  isHeadscaleOnboarded: boolean
   setAuthenticated: (value: boolean) => void
   setUsername: (value: string) => void
-  setHeadscaleOnboarded: (value: boolean) => void
   logout: () => void
 }
 
@@ -16,7 +14,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setAuthenticated] = useState(false)
   const [username, setUsername] = useState('')
-  const [isHeadscaleOnboarded, setHeadscaleOnboarded] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -48,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Clear local state regardless of API call result
       setAuthenticated(false)
       setUsername('')
-      setHeadscaleOnboarded(false)
     }
   }
 
@@ -61,10 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         isAuthenticated,
         username,
-        isHeadscaleOnboarded,
         setAuthenticated,
         setUsername,
-        setHeadscaleOnboarded,
         logout,
       }}
     >

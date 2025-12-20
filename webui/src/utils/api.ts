@@ -5,7 +5,6 @@ import type {
   FinishLoginResponse,
   AuthTestResponse,
   LogoutResponse,
-  OnboardHeadscaleResponse,
   Network,
   CreateNetworkRequest,
   ListNetworksResponse,
@@ -242,27 +241,6 @@ export async function deleteNetwork(networkId: number): Promise<void> {
     throw new Error(errorText || 'Failed to delete network')
   }
   console.log('[API] Network deleted successfully:', networkId)
-}
-
-// Onboard to Headscale
-export async function onboardHeadscale(): Promise<OnboardHeadscaleResponse> {
-  console.log('[API] Onboarding to Headscale...')
-  const response = await fetch(`${API_BASE_URL}/v1/headscale/onboard`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include',
-  })
-
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Failed to onboard: ${errorText}`)
-  }
-
-  const result = await response.json()
-  console.log('[API] Onboarding completed:', result.success)
-  return result
 }
 
 // Logout user

@@ -32,12 +32,6 @@ export interface LogoutResponse {
   message: string
 }
 
-export interface OnboardHeadscaleResponse {
-  success: boolean
-  message: string
-  onboarded: boolean
-}
-
 export interface Network {
   id: number
   name: string

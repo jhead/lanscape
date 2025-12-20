@@ -11,7 +11,6 @@ import (
 	"github.com/jhead/lanscape/lanscaped/internal/api/routes"
 	"github.com/jhead/lanscape/lanscaped/internal/auth"
 	"github.com/jhead/lanscape/lanscaped/internal/store"
-	"github.com/jhead/lanscape/lanscaped/internal/tailnet"
 )
 
 // Server represents the HTTP server
@@ -21,7 +20,6 @@ type Server struct {
 	store           *store.Store
 	webauthnService *auth.WebAuthnService
 	jwtService      *auth.JWTService
-	headscaleClient *tailnet.Client
 }
 
 // NewServer creates a new API server
@@ -44,18 +42,11 @@ func NewServer(port int) (*Server, error) {
 		return nil, fmt.Errorf("failed to initialize JWT service: %w", err)
 	}
 
-	// Initialize Headscale client
-	headscaleClient, err := tailnet.NewClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to initialize Headscale client: %w", err)
-	}
-
 	return &Server{
 		port:            port,
 		store:           dbStore,
 		webauthnService: webauthnService,
 		jwtService:      jwtService,
-		headscaleClient: headscaleClient,
 	}, nil
 }
 
@@ -155,9 +146,6 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 	// Protected routes (require JWT)
 	jwtMiddleware := middleware.JWTAuthMiddleware(s.jwtService)
 	mux.Handle("GET /v1/auth/test", jwtMiddleware(http.HandlerFunc(routes.HandleAuthTest)))
-	mux.Handle("POST /v1/headscale/onboard", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		routes.HandleOnboardHeadscale(w, r, s.store, s.headscaleClient)
-	})))
 
 	// Network routes (require JWT)
 	mux.Handle("POST /v1/networks", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

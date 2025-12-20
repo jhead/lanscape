@@ -65,7 +65,7 @@ export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemPr
           onClick={handleJoin}
           disabled={loading}
         >
-          Connect
+          Join Network
         </button>
         <button
           className="delete-btn"

@@ -8,10 +8,9 @@ import (
 
 // User represents a user in the database
 type User struct {
-	ID                 int64
-	Username           string
-	CreatedAt          time.Time
-	HeadscaleOnboarded bool
+	ID        int64
+	Username  string
+	CreatedAt time.Time
 }
 
 // CreateUser creates a new user
@@ -36,12 +35,11 @@ func (s *Store) CreateUser(username string) (*User, error) {
 func (s *Store) GetUserByID(id int64) (*User, error) {
 	var user User
 	var createdAt string
-	var headscaleOnboarded int
 
 	err := s.db.QueryRow(
-		"SELECT id, username, created_at, headscale_onboarded FROM users WHERE id = ?",
+		"SELECT id, username, created_at FROM users WHERE id = ?",
 		id,
-	).Scan(&user.ID, &user.Username, &createdAt, &headscaleOnboarded)
+	).Scan(&user.ID, &user.Username, &createdAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")
@@ -50,7 +48,6 @@ func (s *Store) GetUserByID(id int64) (*User, error) {
 	}
 
 	user.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	user.HeadscaleOnboarded = headscaleOnboarded != 0
 	return &user, nil
 }
 
@@ -58,12 +55,11 @@ func (s *Store) GetUserByID(id int64) (*User, error) {
 func (s *Store) GetUserByUsername(username string) (*User, error) {
 	var user User
 	var createdAt string
-	var headscaleOnboarded int
 
 	err := s.db.QueryRow(
-		"SELECT id, username, created_at, headscale_onboarded FROM users WHERE username = ?",
+		"SELECT id, username, created_at FROM users WHERE username = ?",
 		username,
-	).Scan(&user.ID, &user.Username, &createdAt, &headscaleOnboarded)
+	).Scan(&user.ID, &user.Username, &createdAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")
@@ -72,18 +68,5 @@ func (s *Store) GetUserByUsername(username string) (*User, error) {
 	}
 
 	user.CreatedAt, _ = time.Parse("2006-01-02 15:04:05", createdAt)
-	user.HeadscaleOnboarded = headscaleOnboarded != 0
 	return &user, nil
-}
-
-// MarkHeadscaleOnboarded marks a user as onboarded to Headscale
-func (s *Store) MarkHeadscaleOnboarded(userID int64) error {
-	_, err := s.db.Exec(
-		"UPDATE users SET headscale_onboarded = 1 WHERE id = ?",
-		userID,
-	)
-	if err != nil {
-		return fmt.Errorf("failed to mark user as onboarded: %w", err)
-	}
-	return nil
 }

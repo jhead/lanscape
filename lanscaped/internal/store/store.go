@@ -112,17 +112,6 @@ func (s *Store) migrate() error {
 		}
 	}
 
-	// Migrate users table to add headscale_onboarded column if it doesn't exist
-	var userCount int
-	err = s.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='headscale_onboarded'").Scan(&userCount)
-	if err == nil && userCount == 0 {
-		log.Println("Adding headscale_onboarded column to users table")
-		if _, err := s.db.Exec("ALTER TABLE users ADD COLUMN headscale_onboarded INTEGER NOT NULL DEFAULT 0"); err != nil {
-			// Column might already exist, log but don't fail
-			log.Printf("Note: headscale_onboarded column migration: %v", err)
-		}
-	}
-
 	// Migrate networks table to add api_key column if it doesn't exist
 	var networkCount int
 	err = s.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('networks') WHERE name='api_key'").Scan(&networkCount)
