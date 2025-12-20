@@ -148,6 +148,10 @@ func (s *WebAuthnService) FinishRegistration(username string, sessionData *webau
 		webauthnCreds[i] = webauthn.Credential{
 			ID:        cred.CredentialID,
 			PublicKey: cred.PublicKey,
+			Flags: webauthn.CredentialFlags{
+				BackupEligible: cred.BackupEligible,
+				BackupState:    cred.BackupState,
+			},
 		}
 	}
 
@@ -239,9 +243,15 @@ func (s *WebAuthnService) FinishLogin(username string, sessionData *webauthn.Ses
 
 	webauthnCreds := make([]webauthn.Credential, len(creds))
 	for i, cred := range creds {
+		log.Printf("Loading credential for login: credential ID: %s, stored backupEligible: %v, stored backupState: %v",
+			base64.RawURLEncoding.EncodeToString(cred.CredentialID), cred.BackupEligible, cred.BackupState)
 		webauthnCreds[i] = webauthn.Credential{
 			ID:        cred.CredentialID,
 			PublicKey: cred.PublicKey,
+			Flags: webauthn.CredentialFlags{
+				BackupEligible: cred.BackupEligible,
+				BackupState:    cred.BackupState,
+			},
 		}
 	}
 
@@ -256,6 +266,7 @@ func (s *WebAuthnService) FinishLogin(username string, sessionData *webauthn.Ses
 		return nil, fmt.Errorf("failed to finish login: %w", err)
 	}
 
-	log.Printf("Completed WebAuthn login for user: %s, credential ID: %s", username, base64.RawURLEncoding.EncodeToString(credential.ID))
+	log.Printf("Completed WebAuthn login for user: %s, credential ID: %s, backupEligible: %v, backupState: %v",
+		username, base64.RawURLEncoding.EncodeToString(credential.ID), credential.Flags.BackupEligible, credential.Flags.BackupState)
 	return credential, nil
 }
