@@ -71,4 +71,5 @@ jobs:
 
       - name: Image digest
         if: github.event_name != 'pull_request'
-        run: echo "webui image digest: ${{ steps.meta.outputs.digest }}"
+        run: |
+          echo "webui image digest: ${{ steps.meta.outputs.digest }}"
