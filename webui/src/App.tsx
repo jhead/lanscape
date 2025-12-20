@@ -9,13 +9,13 @@ function App() {
     <div className="container">
       <h1>Lanscape</h1>
       <p className="subtitle">
-        {isAuthenticated ? `Welcome, ${username}!` : 'WebAuthn Authentication'}
+        {isAuthenticated ? `Welcome, ${username}!` : null}
       </p>
       {isAuthenticated ? <Dashboard /> : <AuthForm />}
       <p className="info-text">
         {isAuthenticated
-          ? 'Manage your networks and join different Headscale instances.'
-          : 'Register a new account or login with an existing one using WebAuthn.'}
+          ? 'Connect to your networks and manage Headscale instances.'
+          : 'Sign in with passkey or create a new account.'}
       </p>
     </div>
   )

@@ -16,24 +16,24 @@ export function Dashboard() {
   const handleOnboard = async () => {
     try {
       setLoading(true)
-      setStatus({ type: 'info', message: 'Creating user in Headscale...' })
+      setStatus({ type: 'info', message: 'Setting up Headscale...' })
 
       const result = await onboardHeadscale()
 
       if (result.success) {
         setStatus({
           type: 'success',
-          message: result.message || 'Successfully onboarded to Headscale!',
+          message: result.message || 'Headscale ready',
         })
         setHeadscaleOnboarded(result.onboarded)
       } else {
-        throw new Error(result.message || 'Onboarding failed')
+        throw new Error(result.message || 'Setup failed')
       }
     } catch (error) {
       console.error('Onboarding error:', error)
       setStatus({
         type: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: error instanceof Error ? error.message : 'Setup failed',
       })
     } finally {
       setLoading(false)
@@ -52,7 +52,7 @@ export function Dashboard() {
               className="onboard-btn"
               disabled
             >
-              Already Onboarded to Headscale
+              Headscale ready
             </button>
           ) : (
             <button
@@ -62,7 +62,7 @@ export function Dashboard() {
               onClick={handleOnboard}
               disabled={loading}
             >
-              Onboard to Headscale
+              Setup Headscale
             </button>
           )}
           <button
@@ -71,7 +71,7 @@ export function Dashboard() {
             className="logout-btn"
             onClick={logout}
           >
-            Logout
+            Sign out
           </button>
         </div>
       </div>

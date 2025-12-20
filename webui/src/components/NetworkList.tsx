@@ -39,7 +39,7 @@ export function NetworkList() {
   if (loading) {
     return (
       <div className="card networks-card">
-        <p>Loading networks...</p>
+        <p style={{ color: '#71717a', textAlign: 'center' }}>Loading...</p>
       </div>
     )
   }
@@ -55,12 +55,12 @@ export function NetworkList() {
             className="create-btn"
             onClick={() => setShowCreateModal(true)}
           >
-            + Create Network
+            + New network
           </button>
         </div>
         <div id="networks-list" className="networks-list">
           {networks.length === 0 ? (
-            <p className="empty-state">No networks available. Create one to get started!</p>
+            <p className="empty-state">No networks yet. Create one to get started.</p>
           ) : (
             networks.map((network) => (
               <NetworkItem

@@ -15,20 +15,20 @@ export function AuthForm() {
 
   const handleRegister = async () => {
     if (!username.trim()) {
-      setStatus({ type: 'error', message: 'Please enter a username' })
+      setStatus({ type: 'error', message: 'Enter a username' })
       return
     }
 
     try {
       setLoading(true)
-      setStatus({ type: 'info', message: 'Starting registration...' })
+      setStatus({ type: 'info', message: 'Creating account...' })
 
       const result = await registerUser(username.trim())
       
       if (result.success) {
         setStatus({
           type: 'success',
-          message: `Registration successful! Welcome, ${result.username}!`,
+          message: `Welcome, ${result.username}`,
         })
         setAuthenticated(true)
         setAuthUsername(result.username || '')
@@ -39,7 +39,7 @@ export function AuthForm() {
       console.error('Registration error:', error)
       setStatus({
         type: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: error instanceof Error ? error.message : 'Registration failed',
       })
     } finally {
       setLoading(false)
@@ -48,20 +48,20 @@ export function AuthForm() {
 
   const handleLogin = async () => {
     if (!username.trim()) {
-      setStatus({ type: 'error', message: 'Please enter a username' })
+      setStatus({ type: 'error', message: 'Enter a username' })
       return
     }
 
     try {
       setLoading(true)
-      setStatus({ type: 'info', message: 'Starting login...' })
+      setStatus({ type: 'info', message: 'Signing in...' })
 
       const result = await loginUser(username.trim())
       
       if (result.success) {
         setStatus({
           type: 'success',
-          message: `Login successful! Welcome back, ${result.username}!`,
+          message: `Welcome back, ${result.username}`,
         })
         setAuthenticated(true)
         setAuthUsername(result.username || '')
@@ -72,7 +72,7 @@ export function AuthForm() {
       console.error('Login error:', error)
       setStatus({
         type: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: error instanceof Error ? error.message : 'Login failed',
       })
     } finally {
       setLoading(false)
@@ -92,7 +92,7 @@ export function AuthForm() {
         <input
           type="text"
           id="username"
-          placeholder="Enter your username"
+          placeholder="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           disabled={loading}
@@ -105,14 +105,14 @@ export function AuthForm() {
           onClick={handleRegister}
           disabled={loading}
         >
-          Register
+          Create account
         </button>
         <button
           type="button"
           onClick={handleLogin}
           disabled={loading}
         >
-          Login
+          Sign in
         </button>
       </div>
       <StatusMessage type={status.type} message={status.message} />

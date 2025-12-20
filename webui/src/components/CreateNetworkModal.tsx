@@ -22,17 +22,17 @@ export function CreateNetworkModal({ onClose, onSuccess }: CreateNetworkModalPro
     e.preventDefault()
     
     if (!name.trim() || !endpoint.trim() || !apiKey.trim()) {
-      setStatus({ type: 'error', message: 'Please fill in all fields' })
+      setStatus({ type: 'error', message: 'All fields required' })
       return
     }
 
     try {
       setLoading(true)
-      setStatus({ type: 'info', message: 'Creating network...' })
+      setStatus({ type: 'info', message: 'Creating...' })
       
       await createNetwork(name.trim(), endpoint.trim(), apiKey.trim())
       
-      setStatus({ type: 'success', message: 'Network created successfully!' })
+      setStatus({ type: 'success', message: 'Network created' })
       
       setTimeout(() => {
         onSuccess()
@@ -41,7 +41,7 @@ export function CreateNetworkModal({ onClose, onSuccess }: CreateNetworkModalPro
     } catch (error) {
       setStatus({
         type: 'error',
-        message: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        message: error instanceof Error ? error.message : 'Creation failed',
       })
     } finally {
       setLoading(false)
@@ -51,14 +51,14 @@ export function CreateNetworkModal({ onClose, onSuccess }: CreateNetworkModalPro
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <h2>Create New Network</h2>
+        <h2>New network</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label htmlFor="network-name">Network Name</label>
+            <label htmlFor="network-name">Name</label>
             <input
               type="text"
               id="network-name"
-              placeholder="e.g., My Network"
+              placeholder="network name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -66,7 +66,7 @@ export function CreateNetworkModal({ onClose, onSuccess }: CreateNetworkModalPro
             />
           </div>
           <div className="form-group">
-            <label htmlFor="network-endpoint">Headscale Endpoint</label>
+            <label htmlFor="network-endpoint">Headscale endpoint</label>
             <input
               type="text"
               id="network-endpoint"
@@ -78,11 +78,11 @@ export function CreateNetworkModal({ onClose, onSuccess }: CreateNetworkModalPro
             />
           </div>
           <div className="form-group">
-            <label htmlFor="network-api-key">Headscale API Key</label>
+            <label htmlFor="network-api-key">API key</label>
             <input
               type="password"
               id="network-api-key"
-              placeholder="Enter API key"
+              placeholder="api key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               required

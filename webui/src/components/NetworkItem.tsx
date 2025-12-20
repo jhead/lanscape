@@ -14,12 +14,12 @@ export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemPr
   const handleJoin = async () => {
     try {
       setLoading(true)
-      onStatusChange('Joining network...', 'info')
+      onStatusChange('Connecting...', 'info')
       await joinNetwork(network.id)
-      onStatusChange('Successfully joined network!', 'success')
+      onStatusChange('Connected', 'success')
     } catch (error) {
       onStatusChange(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.message : 'Connection failed',
         'error'
       )
     } finally {
@@ -28,21 +28,21 @@ export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemPr
   }
 
   const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this network? This action cannot be undone.')) {
+    if (!confirm('Delete this network? This cannot be undone.')) {
       return
     }
 
     try {
       setLoading(true)
-      onStatusChange('Deleting network...', 'info')
+      onStatusChange('Deleting...', 'info')
       await deleteNetwork(network.id)
-      onStatusChange('Network deleted successfully!', 'success')
+      onStatusChange('Deleted', 'success')
       setTimeout(() => {
         onDelete()
       }, 1000)
     } catch (error) {
       onStatusChange(
-        `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        error instanceof Error ? error.message : 'Delete failed',
         'error'
       )
     } finally {
@@ -56,7 +56,7 @@ export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemPr
         <h3>{network.name}</h3>
         <p className="network-endpoint">{network.headscale_endpoint}</p>
         <p className="network-date">
-          Created: {new Date(network.created_at).toLocaleDateString()}
+          {new Date(network.created_at).toLocaleDateString()}
         </p>
       </div>
       <div className="network-actions">
@@ -65,14 +65,14 @@ export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemPr
           onClick={handleJoin}
           disabled={loading}
         >
-          Join
+          Connect
         </button>
         <button
           className="delete-btn"
           onClick={handleDelete}
           disabled={loading}
         >
-          Delete
+          Delete Network
         </button>
       </div>
     </div>
