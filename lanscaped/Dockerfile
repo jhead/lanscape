@@ -28,21 +28,25 @@ RUN CGO_ENABLED=1 go build \
     ./cmd/lanscaped.go
 
 # Production stage
-FROM alpine:latest
+FROM debian:bookworm-slim
 
-# Install runtime dependencies for sqlite and healthcheck
-RUN apk add --no-cache ca-certificates sqlite-libs wget
+# Install runtime dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libsqlite3-0 \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
-RUN addgroup -g 1000 lanscape && \
-    adduser -D -u 1000 -G lanscape lanscape
+RUN groupadd -g 1000 lanscape && \
+    useradd -r -u 1000 -g lanscape lanscape
 
 WORKDIR /app
 
 # Copy binary from builder
 COPY --from=builder /build/lanscaped /app/lanscaped
 
-# Create data directory for database
+# Create data directory
 RUN mkdir -p /app/data && \
     chown -R lanscape:lanscape /app
 
@@ -52,7 +56,7 @@ USER lanscape
 # Expose port (default 8080, configurable via PORT env var)
 EXPOSE 8080
 
-# Health check (uses default port 8080, adjust if PORT env var is set differently)
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080/healthz || exit 1
 
