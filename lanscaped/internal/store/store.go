@@ -1,0 +1,115 @@
+package store
+
+import (
+	"database/sql"
+	"fmt"
+	"log"
+	"os"
+
+	_ "github.com/mattn/go-sqlite3"
+)
+
+// Store represents the database store
+type Store struct {
+	db *sql.DB
+}
+
+// NewStore creates a new database store
+func NewStore() (*Store, error) {
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		dbURL = "file:lanscaped.db?_foreign_keys=on"
+	}
+
+	db, err := sql.Open("sqlite3", dbURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	store := &Store{db: db}
+
+	if err := store.migrate(); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	}
+
+	log.Println("Database initialized successfully")
+	return store, nil
+}
+
+// Close closes the database connection
+func (s *Store) Close() error {
+	return s.db.Close()
+}
+
+// migrate runs database migrations
+func (s *Store) migrate() error {
+	queries := []string{
+		`CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT NOT NULL UNIQUE,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS webauthn_credentials (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			credential_id BLOB NOT NULL UNIQUE,
+			public_key BLOB NOT NULL,
+			counter INTEGER NOT NULL DEFAULT 0,
+			backup_eligible INTEGER NOT NULL DEFAULT 0,
+			backup_state INTEGER NOT NULL DEFAULT 0,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE IF NOT EXISTS webauthn_sessions (
+			id TEXT PRIMARY KEY,
+			username TEXT NOT NULL,
+			session_data BLOB NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			expires_at DATETIME NOT NULL
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_webauthn_credentials_user_id ON webauthn_credentials(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_webauthn_credentials_credential_id ON webauthn_credentials(credential_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_webauthn_sessions_expires_at ON webauthn_sessions(expires_at)`,
+	}
+
+	for _, query := range queries {
+		if _, err := s.db.Exec(query); err != nil {
+			return fmt.Errorf("failed to execute migration: %w", err)
+		}
+	}
+
+	// Migrate existing webauthn_credentials table to add backup flags if they don't exist
+	// SQLite doesn't support ALTER TABLE ADD COLUMN IF NOT EXISTS, so we check first
+	var count int
+	err := s.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('webauthn_credentials') WHERE name='backup_eligible'").Scan(&count)
+	if err == nil && count == 0 {
+		log.Println("Adding backup_eligible and backup_state columns to webauthn_credentials table")
+		if _, err := s.db.Exec("ALTER TABLE webauthn_credentials ADD COLUMN backup_eligible INTEGER NOT NULL DEFAULT 0"); err != nil {
+			// Column might already exist, log but don't fail
+			log.Printf("Note: backup_eligible column migration: %v", err)
+		}
+		if _, err := s.db.Exec("ALTER TABLE webauthn_credentials ADD COLUMN backup_state INTEGER NOT NULL DEFAULT 0"); err != nil {
+			// Column might already exist, log but don't fail
+			log.Printf("Note: backup_state column migration: %v", err)
+		}
+	}
+
+	// Migrate users table to add headscale_onboarded column if it doesn't exist
+	var userCount int
+	err = s.db.QueryRow("SELECT COUNT(*) FROM pragma_table_info('users') WHERE name='headscale_onboarded'").Scan(&userCount)
+	if err == nil && userCount == 0 {
+		log.Println("Adding headscale_onboarded column to users table")
+		if _, err := s.db.Exec("ALTER TABLE users ADD COLUMN headscale_onboarded INTEGER NOT NULL DEFAULT 0"); err != nil {
+			// Column might already exist, log but don't fail
+			log.Printf("Note: headscale_onboarded column migration: %v", err)
+		}
+	}
+
+	log.Println("Database migrations completed")
+	return nil
+}
+
+// DB returns the underlying database connection
+func (s *Store) DB() *sql.DB {
+	return s.db
+}
