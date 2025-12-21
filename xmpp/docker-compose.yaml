@@ -1,0 +1,34 @@
+services:
+  tailscale:
+    image: tailscale/tailscale:latest
+    container_name: tailscale
+    hostname: tailscale
+    environment:
+      - TS_AUTHKEY=${TS_AUTHKEY}
+      - TS_EXTRA_ARGS=--reset --force-reauth --login-server https://ts.jxh.io
+      - TS_STATE_DIR=/var/lib/tailscale
+      - TS_USERSPACE=false
+    ports:
+      # Expose ejabberd-http on host for ACME certs
+      - "127.0.0.1:5280:5280"
+    cap_add:
+      - net_admin
+    devices:
+      - /dev/net/tun
+    volumes:
+      - ./tailscale-data:/var/lib/tailscale
+    restart: unless-stopped
+    command: tailscaled
+
+  ejabberd:
+    image: ghcr.io/processone/ejabberd
+    container_name: ejabberd
+    # Use tailscale network
+    network_mode: service:tailscale
+    volumes:
+      - ./conf/ejabberd.yml:/opt/ejabberd/conf/ejabberd.yml
+      - ./database:/opt/ejabberd/database
+    environment:
+      - REGISTER_ADMIN_PASSWORD=password
+    stdin_open: true
+    tty: true
