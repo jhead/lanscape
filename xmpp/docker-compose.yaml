@@ -30,5 +30,6 @@ services:
       - ./database:/opt/ejabberd/database
     environment:
       - REGISTER_ADMIN_PASSWORD=password
+    restart: unless-stopped
     stdin_open: true
     tty: true
