@@ -1,0 +1,82 @@
+.create-channel-modal {
+  max-width: 450px;
+}
+
+.create-channel-modal .form-group {
+  margin-bottom: 1.5rem;
+}
+
+.create-channel-modal label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #d4d4d8;
+  font-size: 0.875rem;
+}
+
+.create-channel-modal input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  border: 1px solid #3f3f46;
+  border-radius: 8px;
+  transition: all 0.2s;
+  font-family: inherit;
+  background: #27272a;
+  color: #e4e4e7;
+}
+
+.create-channel-modal input:focus {
+  outline: none;
+  border-color: #52525b;
+  background: #2a2a2d;
+  box-shadow: 0 0 0 3px rgba(113, 113, 122, 0.1);
+}
+
+.create-channel-modal input::placeholder {
+  color: #71717a;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1.5rem;
+}
+
+.modal-actions .primary-btn,
+.modal-actions .secondary-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  border-radius: 8px;
+  border: 1px solid;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.modal-actions .primary-btn {
+  background: #3b82f6;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+.modal-actions .primary-btn:hover:not(:disabled) {
+  background: #60a5fa;
+}
+
+.modal-actions .secondary-btn {
+  background: #27272a;
+  border-color: #3f3f46;
+  color: #e4e4e7;
+}
+
+.modal-actions .secondary-btn:hover {
+  background: #3f3f46;
+  border-color: #52525b;
+}
+
+.modal-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

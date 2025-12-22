@@ -216,8 +216,9 @@ func HandleFinishRegistration(w http.ResponseWriter, r *http.Request, webauthnSe
 		return
 	}
 
-	// Generate JWT token
-	token, err := jwtService.GenerateToken(user.ID, user.Username)
+	// Generate JWT token without JID (network-specific tokens are minted on-demand)
+	// Empty JID for initial login token - network-specific tokens are generated when connecting
+	token, err := jwtService.GenerateToken(user.ID, user.Username, "")
 	if err != nil {
 		log.Printf("Error generating JWT token: %v", err)
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)
@@ -398,8 +399,9 @@ func HandleFinishLogin(w http.ResponseWriter, r *http.Request, webauthnService *
 		return
 	}
 
-	// Generate JWT token
-	token, err := jwtService.GenerateToken(user.ID, user.Username)
+	// Generate JWT token without JID (network-specific tokens are minted on-demand)
+	// Empty JID for initial login token - network-specific tokens are generated when connecting
+	token, err := jwtService.GenerateToken(user.ID, user.Username, "")
 	if err != nil {
 		log.Printf("Error generating JWT token: %v", err)
 		http.Error(w, "Failed to generate token", http.StatusInternalServerError)

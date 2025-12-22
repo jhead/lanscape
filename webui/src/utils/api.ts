@@ -268,6 +268,40 @@ export async function logoutUser(): Promise<LogoutResponse> {
   return result
 }
 
+// Get current user info
+export async function getCurrentUser(): Promise<{ user_handle: string }> {
+  console.log('[API] Fetching current user info...')
+  const response = await fetch(`${API_BASE_URL}/v1/me`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch user info')
+  }
+  
+  const data = await response.json()
+  console.log('[API] Current user:', data.user_handle)
+  return data
+}
+
+// Get JWT token for XMPP authentication
+export async function getJWTToken(): Promise<string> {
+  console.log('[API] Fetching JWT token...')
+  const response = await fetch(`${API_BASE_URL}/v1/auth/token`, {
+    method: 'GET',
+    credentials: 'include',
+  })
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch JWT token')
+  }
+  
+  const data = await response.json()
+  console.log('[API] JWT token retrieved')
+  return data.token
+}
+
 // Adopt device (create preauth key)
 export async function adoptDevice(networkId: number, name?: string, platform?: string): Promise<AdoptDeviceResponse> {
   console.log('[API] Adopting device for network:', networkId)
