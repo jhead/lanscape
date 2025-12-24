@@ -109,9 +109,8 @@ function buildSignalingUrl(networkName: string | null): string {
     return DEFAULT_SIGNALING_URL
   }
 
-  // Build URL: ws://signaling.<network name>.tsnet.jxh.io:8081
-  // TODO: Support wss:// as well
-  const url = `ws://signaling.${networkName}.tsnet.jxh.io:8081`
+  // Build URL: wss://signaling.<network name>.tsnet.jxh.io
+  const url = `wss://signaling.${networkName}.tsnet.jxh.io`
   console.log('[ChatClient] Built signaling URL from network:', url)
   return url
 }

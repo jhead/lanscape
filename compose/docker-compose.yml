@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   lanscaped:
     image: ghcr.io/${GITHUB_REPOSITORY:-jhead/lanscape}/lanscaped:latest
@@ -56,6 +54,23 @@ services:
       retries: 3
       start_period: 5s
 
+  signaling-nginx:
+    build:
+      context: .
+      dockerfile: signaling-nginx.Dockerfile
+    container_name: lanscape-signaling-nginx
+    restart: unless-stopped
+    environment:
+      - SIGNALING_DOMAIN=${SIGNALING_DOMAIN:-signaling.main.tsnet.jxh.io}
+      - CF_Token=${CF_Token}
+      - CF_Zone_ID=${CF_Zone_ID}
+    network_mode: service:signaling-tailscale
+    volumes:
+      - signaling-ssl:/etc/nginx/ssl
+    depends_on:
+      - signaling-tailscale
+      - signaling
+
   nginx:
     image: nginx:alpine
     container_name: lanscape-nginx
@@ -75,6 +90,8 @@ volumes:
   lanscaped-data:
     driver: local
   tailscale-data:
+    driver: local
+  signaling-ssl:
     driver: local
 
 networks:
