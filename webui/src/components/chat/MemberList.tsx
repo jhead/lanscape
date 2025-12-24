@@ -1,4 +1,5 @@
 import { useChat } from '../../contexts/ChatContext'
+import { Avatar } from './WebGLAvatar'
 import './MemberList.css'
 
 export function MemberList() {
@@ -15,6 +16,7 @@ export function MemberList() {
             key={member.id}
             className={`member-list-item ${member.isSelf ? 'self' : ''}`}
           >
+            <Avatar userId={member.id} size={24} className="avatar-inline avatar-xs" />
             <span className="member-status online"></span>
             <span className="member-name" title={member.id}>
               {member.name}

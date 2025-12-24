@@ -19,6 +19,7 @@ export interface SignalingConfig {
 export interface PeerConnection extends PeerConnectionInfo {
   pc: RTCPeerConnection
   dataChannel: RTCDataChannel | null
+  pendingCandidates: RTCIceCandidateInit[]  // Queue for candidates that arrive before remote description
 }
 
 export type SignalingEventType =
@@ -56,6 +57,17 @@ export class WebRTCSignalingClient {
   private reconnectDelay = 1000
   private config: SignalingConfig
   private msgIdCounter = 0
+  private peerHealthCheckInterval: ReturnType<typeof setInterval> | null = null
+  private static readonly PEER_HEALTH_CHECK_INTERVAL = 5000 // Check every 5 seconds
+  private static readonly PEER_CONNECTION_TIMEOUT = 15000 // Force retry after 15 seconds
+  private static readonly RETRY_COOLDOWN = 10000 // Don't retry same peer more than once per 10s
+
+  // Persistent queue for ICE candidates that survives connection recreation
+  private globalPendingCandidates = new Map<string, RTCIceCandidateInit[]>()
+  // Track when each connection started for timeout detection
+  private connectionStartTimes = new Map<string, number>()
+  // Track last retry time to prevent retry storms
+  private lastRetryTimes = new Map<string, number>()
 
   constructor(config: SignalingConfig) {
     this.config = config
@@ -80,6 +92,7 @@ export class WebRTCSignalingClient {
         this.ws.onopen = () => {
           console.log('[WebRTC] WebSocket connected')
           this.reconnectAttempts = 0
+          this.startPeerHealthCheck()
           this.emit({ type: 'connected' })
           resolve()
         }
@@ -116,6 +129,9 @@ export class WebRTCSignalingClient {
   disconnect(): void {
     // Stop reconnection attempts
     this.reconnectAttempts = this.maxReconnectAttempts
+
+    // Stop health check
+    this.stopPeerHealthCheck()
 
     if (this.ws) {
       this.ws.close()
@@ -292,14 +308,32 @@ export class WebRTCSignalingClient {
 
   private handlePeerJoined(msg: PeerJoinedMessage): void {
     console.log('[WebRTC] Peer joined:', msg.peerId)
-    if (msg.peerId !== this.selfId && !this.peers.has(msg.peerId)) {
-      this.createPeerConnection(msg.peerId, true)
+    if (msg.peerId === this.selfId) return
+    
+    // If we already have a connection to this peer, clean it up first
+    // This handles the case where a peer refreshes their browser
+    const existingConn = this.peers.get(msg.peerId)
+    if (existingConn) {
+      console.log('[WebRTC] Cleaning up stale connection for rejoined peer:', msg.peerId)
+      if (existingConn.dataChannel) {
+        existingConn.dataChannel.close()
+      }
+      existingConn.pc.close()
+      this.peers.delete(msg.peerId)
     }
+    
+    this.createPeerConnection(msg.peerId, true)
   }
 
   private handlePeerLeft(msg: PeerLeftMessage): void {
     console.log('[WebRTC] Peer left:', msg.peerId)
     const peerConn = this.peers.get(msg.peerId)
+    
+    // Clean up all resources for this peer
+    this.globalPendingCandidates.delete(msg.peerId)
+    this.connectionStartTimes.delete(msg.peerId)
+    this.lastRetryTimes.delete(msg.peerId)
+
     if (peerConn) {
       if (peerConn.dataChannel) {
         peerConn.dataChannel.close()
@@ -316,8 +350,41 @@ export class WebRTCSignalingClient {
   private async handleOffer(msg: OfferMessage): Promise<void> {
     console.log('[WebRTC] Received offer from:', msg.from)
     let peerConn = this.peers.get(msg.from)
+    
+    // Perfect negotiation: determine politeness based on peer ID comparison
+    const isPolite = this.selfId! < msg.from
+    
+    // Check for collision: we have a local offer pending
+    const isCollision = peerConn?.pc.signalingState === 'have-local-offer'
+    
+    // Also check if our existing connection is in a bad state (failed or stuck)
+    const isExistingUnhealthy = peerConn && (
+      peerConn.pc.connectionState === 'failed' || 
+      peerConn.pc.connectionState === 'disconnected' ||
+      peerConn.pc.connectionState === 'closed'
+    )
+
+    if (isCollision || isExistingUnhealthy) {
+      if (isCollision && !isPolite) {
+        console.log('[WebRTC] Ignoring offer collision (impolite peer):', msg.from)
+        return
+      }
+      
+      console.log(`[WebRTC] Cleaning up existing connection (${isCollision ? 'collision' : 'unhealthy'}) for new offer from:`, msg.from)
+      
+      if (peerConn) {
+        if (peerConn.dataChannel) {
+          try { peerConn.dataChannel.close() } catch (e) {}
+        }
+        try { peerConn.pc.close() } catch (e) {}
+        this.peers.delete(msg.from)
+      }
+      
+      // Fresh start as responder
+      peerConn = this.createPeerConnection(msg.from, false)
+    }
+    
     if (!peerConn) {
-      // Create connection as responder (don't create offer)
       peerConn = this.createPeerConnection(msg.from, false)
     }
 
@@ -327,16 +394,23 @@ export class WebRTCSignalingClient {
         sdp: msg.payload.sdp,
       })
       await peerConn.pc.setRemoteDescription(offer)
+      
+      // Apply any ICE candidates that arrived before the remote description
+      await this.applyPendingCandidates(peerConn)
 
       const answer = await peerConn.pc.createAnswer()
       await peerConn.pc.setLocalDescription(answer)
+
+      // Wait a tiny bit for at least one candidate to be gathered so the answer
+      // is more likely to contain a valid host path immediately.
+      await this.waitForFirstCandidate(peerConn.pc)
 
       this.sendSignalingMessage({
         type: 'answer',
         to: msg.from,
         payload: {
-          sdp: answer.sdp!,
-          type: answer.type,
+          sdp: peerConn.pc.localDescription!.sdp,
+          type: peerConn.pc.localDescription!.type,
         },
         msgId: this.generateMsgId(),
       })
@@ -355,12 +429,23 @@ export class WebRTCSignalingClient {
       return
     }
 
+    // Check if we can apply the answer - must be in have-local-offer state
+    if (peerConn.pc.signalingState !== 'have-local-offer') {
+      console.log('[WebRTC] Ignoring answer, not in have-local-offer state:', 
+        peerConn.pc.signalingState, 'from:', msg.from)
+      return
+    }
+
     try {
       const answer = new RTCSessionDescription({
         type: 'answer',
         sdp: msg.payload.sdp,
       })
       await peerConn.pc.setRemoteDescription(answer)
+      
+      // Apply any ICE candidates that arrived before the remote description
+      await this.applyPendingCandidates(peerConn)
+      
       this.updatePeerInfo(peerConn)
     } catch (error) {
       console.error('[WebRTC] Error handling answer:', error)
@@ -369,25 +454,71 @@ export class WebRTCSignalingClient {
 
   private handleIceCandidate(msg: IceCandidateMessage): void {
     console.log('[WebRTC] Received ICE candidate from:', msg.from)
+    
+    const candidateInit: RTCIceCandidateInit = {
+      candidate: msg.payload.candidate,
+      sdpMLineIndex: msg.payload.sdpMLineIndex,
+      sdpMid: msg.payload.sdpMid,
+    }
+
+    // Add to global queue so it survives connection recreation
+    if (!this.globalPendingCandidates.has(msg.from)) {
+      this.globalPendingCandidates.set(msg.from, [])
+    }
+    this.globalPendingCandidates.get(msg.from)!.push(candidateInit)
+
     const peerConn = this.peers.get(msg.from)
     if (!peerConn) {
-      console.warn('[WebRTC] Received ICE candidate from unknown peer:', msg.from)
+      console.log('[WebRTC] Buffering ICE candidate for unknown/future peer:', msg.from)
       return
     }
 
-    try {
-      const candidate = new RTCIceCandidate({
-        candidate: msg.payload.candidate,
-        sdpMLineIndex: msg.payload.sdpMLineIndex,
-        sdpMid: msg.payload.sdpMid,
-      })
-      peerConn.pc.addIceCandidate(candidate).catch((error) => {
-        console.error('[WebRTC] Error adding ICE candidate:', error)
-      })
-      this.updatePeerInfo(peerConn)
-    } catch (error) {
-      console.error('[WebRTC] Error handling ICE candidate:', error)
+    // Apply immediately if remote description is already set
+    if (peerConn.pc.remoteDescription) {
+      try {
+        const candidate = new RTCIceCandidate(candidateInit)
+        peerConn.pc.addIceCandidate(candidate).catch((error) => {
+          console.error('[WebRTC] Error adding ICE candidate:', error)
+        })
+        this.updatePeerInfo(peerConn)
+      } catch (error) {
+        console.error('[WebRTC] Error handling ICE candidate:', error)
+      }
+    } else {
+      console.log('[WebRTC] Queueing ICE candidate (no remote description yet):', msg.from)
+      peerConn.pendingCandidates.push(candidateInit)
     }
+  }
+
+  /**
+   * Apply any queued ICE candidates after remote description is set.
+   * Now pulls from both local and global candidate queues.
+   */
+  private async applyPendingCandidates(peerConn: PeerConnection): Promise<void> {
+    const localCandidates = peerConn.pendingCandidates
+    const globalCandidates = this.globalPendingCandidates.get(peerConn.peerId) || []
+    
+    // Combine and deduplicate candidates (by their string representation)
+    const allCandidates = [...localCandidates, ...globalCandidates]
+    const uniqueCandidates = Array.from(new Set(allCandidates.map(c => JSON.stringify(c))))
+      .map(s => JSON.parse(s) as RTCIceCandidateInit)
+
+    if (uniqueCandidates.length === 0) return
+    
+    console.log('[WebRTC] Applying', uniqueCandidates.length, 'unique ICE candidates for:', peerConn.peerId)
+    
+    for (const candidateInit of uniqueCandidates) {
+      try {
+        const candidate = new RTCIceCandidate(candidateInit)
+        await peerConn.pc.addIceCandidate(candidate)
+      } catch (error) {
+        // Some candidates might fail to apply if they are for a different m-line, that's okay
+        console.warn('[WebRTC] Note: ICE candidate not applied:', error.message)
+      }
+    }
+    
+    peerConn.pendingCandidates = []
+    this.updatePeerInfo(peerConn)
   }
 
   private handleError(msg: ErrorMessage): void {
@@ -424,6 +555,7 @@ export class WebRTCSignalingClient {
       localCandidates: 0,
       pc,
       dataChannel: null,
+      pendingCandidates: [],
     }
 
     // Create data channel if we're the initiator
@@ -489,6 +621,7 @@ export class WebRTCSignalingClient {
     }
 
     this.peers.set(peerId, peerConn)
+    this.connectionStartTimes.set(peerId, Date.now())
 
     // If we should create an offer (as initiator), do so now
     if (shouldCreateOffer) {
@@ -547,12 +680,16 @@ export class WebRTCSignalingClient {
       const offer = await peerConn.pc.createOffer()
       await peerConn.pc.setLocalDescription(offer)
 
+      // Wait a tiny bit for at least one candidate to be gathered so the offer
+      // is more likely to contain a valid host path immediately.
+      await this.waitForFirstCandidate(peerConn.pc)
+
       this.sendSignalingMessage({
         type: 'offer',
         to: peerConn.peerId,
         payload: {
-          sdp: offer.sdp!,
-          type: offer.type,
+          sdp: peerConn.pc.localDescription!.sdp,
+          type: peerConn.pc.localDescription!.type,
         },
         msgId: this.generateMsgId(),
       })
@@ -561,6 +698,30 @@ export class WebRTCSignalingClient {
     } catch (error) {
       console.error('[WebRTC] Error creating offer:', error)
     }
+  }
+
+  /**
+   * Helper to wait for the first ICE candidate or a short timeout.
+   * This "warms up" the SDP so it's not sent empty.
+   */
+  private async waitForFirstCandidate(pc: RTCPeerConnection): Promise<void> {
+    if (pc.iceGatheringState === 'complete') return
+    if (pc.localDescription?.sdp?.includes('a=candidate:')) return
+
+    await new Promise<void>(resolve => {
+      const handler = () => {
+        if (pc.iceGatheringState === 'complete' || pc.localDescription?.sdp?.includes('a=candidate:')) {
+          pc.removeEventListener('icecandidate', handler)
+          resolve()
+        }
+      }
+      pc.addEventListener('icecandidate', handler)
+      // Max 500ms wait to avoid delaying too long
+      setTimeout(() => {
+        pc.removeEventListener('icecandidate', handler)
+        resolve()
+      }, 500)
+    })
   }
 
   private sendSignalingMessage(msg: {
@@ -603,6 +764,147 @@ export class WebRTCSignalingClient {
       peerId: peerConn.peerId,
       connection: peerConn,
     })
+  }
+
+  /**
+   * Start periodic health check for peer connections.
+   * Retries failed or disconnected peers.
+   */
+  private startPeerHealthCheck(): void {
+    if (this.peerHealthCheckInterval) return
+
+    console.log('[WebRTC] Starting peer health check')
+    this.peerHealthCheckInterval = setInterval(() => {
+      this.checkPeerHealth()
+    }, WebRTCSignalingClient.PEER_HEALTH_CHECK_INTERVAL)
+  }
+
+  /**
+   * Stop the peer health check interval
+   */
+  private stopPeerHealthCheck(): void {
+    if (this.peerHealthCheckInterval) {
+      console.log('[WebRTC] Stopping peer health check')
+      clearInterval(this.peerHealthCheckInterval)
+      this.peerHealthCheckInterval = null
+    }
+  }
+
+  /**
+   * Check health of all peer connections and retry failed ones.
+   * This handles the case where initial connection attempts failed due to timing.
+   */
+  private checkPeerHealth(): void {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    const peerCount = this.peers.size
+    if (peerCount === 0) {
+      return // No peers to check
+    }
+
+    for (const [peerId, peerConn] of this.peers) {
+      const state = peerConn.pc.connectionState
+      const iceState = peerConn.pc.iceConnectionState
+      const dataChannelState = peerConn.dataChannel?.readyState
+
+      // Skip if already connected with open data channel
+      if (state === 'connected' && dataChannelState === 'open') {
+        continue
+      }
+
+      // Check for connection timeout
+      const startTime = this.connectionStartTimes.get(peerId) || 0
+      const elapsed = Date.now() - startTime
+      
+      // If ICE is connected, we give it much more time (30s) to finish DTLS/SCTP handshake
+      // If ICE is NOT connected, we use the standard timeout (15s)
+      const timeout = iceState === 'connected' ? 30000 : WebRTCSignalingClient.PEER_CONNECTION_TIMEOUT
+      const isTimedOut = elapsed > timeout
+
+      // Skip if connection is new or still actively connecting with a good data channel,
+      // UNLESS it has been connecting for too long.
+      if (!isTimedOut && (state === 'new' || (state === 'connecting' && dataChannelState === 'connecting'))) {
+        continue
+      }
+
+      // Check if this peer needs reconnection
+      // Failed/disconnected/closed connection states indicate we should retry
+      const needsReconnect = 
+        state === 'failed' || 
+        state === 'disconnected' || 
+        state === 'closed' ||
+        (isTimedOut && state !== 'connected')
+
+      // Also check if data channel is unhealthy while connection seems ok.
+      const dataChannelUnhealthy = 
+        (state === 'connected' || state === 'connecting') &&
+        (dataChannelState === 'closing' || dataChannelState === 'closed' || (isTimedOut && (dataChannelState !== 'open')))
+
+      if (needsReconnect || dataChannelUnhealthy) {
+        // To avoid retry storms, only the "impolite" peer (higher ID) should initiate retries
+        // for timeout/stuck situations. Connection failures (failed/closed) can be retried by both.
+        const isImpolite = this.selfId! > peerId
+        const isHardFailure = state === 'failed' || state === 'closed'
+
+        if (isHardFailure || isImpolite) {
+          console.log(`[WebRTC] Health check: ${peerId} needs reconnection (conn: ${state}, ice: ${iceState}, dc: ${dataChannelState}, timedOut: ${isTimedOut})`)
+          this.retryPeerConnection(peerId)
+        }
+      }
+    }
+  }
+
+  /**
+   * Retry connection to a peer by cleaning up the old connection and creating a new one
+   */
+  private retryPeerConnection(peerId: string): void {
+    const now = Date.now()
+    const lastRetry = this.lastRetryTimes.get(peerId) || 0
+    if (now - lastRetry < WebRTCSignalingClient.RETRY_COOLDOWN) {
+      console.log('[WebRTC] Skipping retry for peer (cooldown):', peerId)
+      return
+    }
+
+    const existingConn = this.peers.get(peerId)
+    if (!existingConn) {
+      console.log('[WebRTC] Retry aborted - peer not found:', peerId)
+      return
+    }
+
+    this.lastRetryTimes.set(peerId, now)
+    console.log('[WebRTC] Retrying peer connection:', peerId)
+
+    // Clean up old connection
+    if (existingConn.dataChannel) {
+      console.log('[WebRTC] Closing data channel for retry:', peerId)
+      try {
+        existingConn.dataChannel.close()
+      } catch (e) {
+        // Ignore errors on close
+      }
+    }
+    try {
+      existingConn.pc.close()
+    } catch (e) {
+      // Ignore errors on close
+    }
+    this.peers.delete(peerId)
+    this.connectionStartTimes.delete(peerId)
+    // Clear global candidates for this peer - they belong to the old connection/session
+    // and cannot be reused because ufrag/pwd will change in the new connection.
+    this.globalPendingCandidates.delete(peerId)
+    console.log('[WebRTC] Cleaned up old connection, creating new one for:', peerId)
+
+    // Emit peer-left for the old connection
+    this.emit({
+      type: 'peer-left',
+      peerId,
+    })
+
+    // Create new connection (as initiator since we're retrying)
+    this.createPeerConnection(peerId, true)
   }
 
   private generateMsgId(): string {

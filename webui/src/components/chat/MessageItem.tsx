@@ -1,4 +1,5 @@
 import { useChat, ChatMessage } from '../../contexts/ChatContext'
+import { Avatar } from './WebGLAvatar'
 import './MessageItem.css'
 
 interface MessageItemProps {
@@ -26,9 +27,7 @@ export function MessageItem({ message }: MessageItemProps) {
 
   return (
     <div className={`message-item ${isSelf ? 'sent' : 'received'}`}>
-      <div className="message-avatar">
-        {message.authorName.charAt(0).toUpperCase()}
-      </div>
+      <Avatar userId={message.authorId} size={40} className="message-avatar" />
       <div className="message-content">
         <div className="message-header">
           <span className="message-author">{message.authorName}</span>
