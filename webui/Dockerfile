@@ -7,7 +7,8 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 
 # Install pnpm and dependencies
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Corepack will automatically use the version specified in package.json packageManager field
+RUN corepack enable
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
