@@ -2,14 +2,9 @@ import { useState, useRef, useEffect } from 'react'
 import { useChat } from '../../contexts/ChatContext'
 import './MessageInput.css'
 
-interface MessageInputProps {
-  conversationId: string
-}
-
-export function MessageInput({ conversationId }: MessageInputProps) {
-  const { sendMessage } = useChat()
+export function MessageInput() {
+  const { sendMessage, currentChannelId } = useChat()
   const [input, setInput] = useState('')
-  const [sending, setSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   // Auto-resize textarea
@@ -20,21 +15,14 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     }
   }, [input])
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim() || sending) return
+    if (!input.trim() || !currentChannelId) return
 
-    try {
-      setSending(true)
-      await sendMessage(conversationId, input.trim())
-      setInput('')
-      if (textareaRef.current) {
-        textareaRef.current.style.height = 'auto'
-      }
-    } catch (err: any) {
-      console.error('Error sending message:', err)
-    } finally {
-      setSending(false)
+    sendMessage(input.trim())
+    setInput('')
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
     }
   }
 
@@ -56,11 +44,11 @@ export function MessageInput({ conversationId }: MessageInputProps) {
           placeholder="Type a message..."
           className="message-input"
           rows={1}
-          disabled={sending}
+          disabled={!currentChannelId}
         />
         <button
           type="submit"
-          disabled={!input.trim() || sending}
+          disabled={!input.trim() || !currentChannelId}
           className="message-send-btn"
         >
           ➤

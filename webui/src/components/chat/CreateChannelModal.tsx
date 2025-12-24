@@ -7,60 +7,65 @@ interface CreateChannelModalProps {
 }
 
 export function CreateChannelModal({ onClose }: CreateChannelModalProps) {
-  const { createChannel, setCurrentConversation } = useChat()
+  const { createChannel, setCurrentChannel } = useChat()
   const [name, setName] = useState('')
-  const [jid, setJid] = useState('')
-  const [creating, setCreating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !jid.trim()) return
+    
+    const trimmedName = name.trim()
+    if (!trimmedName) {
+      setError('Channel name is required')
+      return
+    }
 
     try {
-      setCreating(true)
-      const channel = await createChannel(name.trim(), jid.trim())
-      setCurrentConversation(channel.id)
+      const channel = createChannel(trimmedName)
+      setCurrentChannel(channel.id)
       onClose()
-    } catch (err: any) {
-      console.error('Error creating channel:', err)
-    } finally {
-      setCreating(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create channel')
     }
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content create-channel-modal" onClick={(e) => e.stopPropagation()}>
-        <h2>Create or Join Channel</h2>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>Create Channel</h3>
+          <button type="button" onClick={onClose} className="modal-close-btn">
+            ×
+          </button>
+        </div>
+        
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label htmlFor="channel-name">Channel Name</label>
-            <input
-              id="channel-name"
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="My Channel"
-              required
-            />
+            <div className="channel-name-input-wrapper">
+              <span className="channel-name-prefix">#</span>
+              <input
+                id="channel-name"
+                type="text"
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value)
+                  setError(null)
+                }}
+                placeholder="new-channel"
+                autoFocus
+              />
+            </div>
           </div>
-          <div className="form-group">
-            <label htmlFor="channel-jid">Channel Address</label>
-            <input
-              id="channel-jid"
-              type="text"
-              value={jid}
-              onChange={(e) => setJid(e.target.value)}
-              placeholder="channel@example.com"
-              required
-            />
-          </div>
+
+          {error && <div className="modal-error">{error}</div>}
+
           <div className="modal-actions">
-            <button type="button" onClick={onClose} className="secondary-btn">
+            <button type="button" onClick={onClose} className="modal-cancel-btn">
               Cancel
             </button>
-            <button type="submit" disabled={creating || !name.trim() || !jid.trim()} className="primary-btn">
-              {creating ? 'Creating...' : 'Create'}
+            <button type="submit" className="modal-submit-btn" disabled={!name.trim()}>
+              Create
             </button>
           </div>
         </form>

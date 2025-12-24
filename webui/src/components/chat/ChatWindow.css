@@ -17,6 +17,13 @@
   flex-shrink: 0;
 }
 
+.chat-window-hash {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #71717a;
+  margin-right: 0.25rem;
+}
+
 .chat-window-title {
   font-size: 0.9375rem;
   font-weight: 600;

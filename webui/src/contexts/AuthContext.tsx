@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { checkAuthStatus, logoutUser } from '../utils/api'
+import { checkAuthStatus, logoutUser, getCurrentUser } from '../utils/api'
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -22,7 +22,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const authenticated = await checkAuthStatus()
         setAuthenticated(authenticated)
         if (authenticated) {
-          setUsername('User') // Could fetch actual username from API
+          // Fetch actual username from API
+          try {
+            const userInfo = await getCurrentUser()
+            setUsername(userInfo.user_handle || 'User')
+          } catch {
+            setUsername('User')
+          }
         }
       } catch (error) {
         console.error('Error checking auth status:', error)

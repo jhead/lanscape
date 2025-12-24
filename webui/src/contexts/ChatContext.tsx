@@ -1,174 +1,87 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-import { ChatService, ChatMessage, ChatMember, ChatChannel } from '../services/chatService'
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { getChatClient, ChatChannel, ChatMessage, ChatMember, ChatClientState } from '../services/chat'
+
+// Re-export types for convenience
+export type { ChatChannel, ChatMessage, ChatMember }
 
 interface ChatContextType {
-  // Connection
+  // Connection state
   connected: boolean
   connecting: boolean
   error: string | null
-  connect: (serverUrl: string, username: string, networkId: number) => Promise<void>
-  disconnect: () => Promise<void>
-  
-  // Data
-  messages: Map<string, ChatMessage[]>
+  selfId: string | null
+
+  // Members (from awareness)
   members: ChatMember[]
+
+  // Channels (from Y.js CRDT)
   channels: ChatChannel[]
-  currentConversationId: string | null
-  
-  // Actions
-  setCurrentConversation: (conversationId: string | null) => void
-  sendMessage: (conversationId: string, body: string) => Promise<void>
-  createChannel: (name: string, jid: string) => Promise<ChatChannel>
-  
-  // Current user
-  currentJid: string
+  currentChannelId: string | null
+  setCurrentChannel: (channelId: string | null) => void
+  createChannel: (name: string) => ChatChannel
+
+  // Messages (from Y.js CRDT)
+  messages: ChatMessage[]
+  sendMessage: (body: string) => void
+
+  // User info
+  displayName: string
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [service] = useState(() => new ChatService())
-  const [connected, setConnected] = useState(false)
-  const [connecting, setConnecting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [messages, setMessages] = useState<Map<string, ChatMessage[]>>(new Map())
-  const [members, setMembers] = useState<ChatMember[]>([])
-  const [channels, setChannels] = useState<ChatChannel[]>([])
-  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null)
-  const [currentJid, setCurrentJid] = useState('')
+  // Get the singleton client
+  const client = getChatClient()
+  
+  // Track client state in React
+  const [state, setState] = useState<ChatClientState>(client.getState())
 
+  // Subscribe to client state changes
   useEffect(() => {
-    const handleEvent = (event: string, data?: any) => {
-      console.log('[ChatContext] Event:', event, data)
-      
-      switch (event) {
-        case 'connected':
-          setConnected(true)
-          setConnecting(false)
-          setError(null)
-          setCurrentJid(data?.jid || '')
-          break
-          
-        case 'disconnected':
-          setConnected(false)
-          setConnecting(false)
-          setMessages(new Map())
-          setMembers([])
-          setChannels([])
-          setCurrentConversationId(null)
-          setCurrentJid('')
-          break
-          
-        case 'error':
-          setError(data?.message || 'An error occurred')
-          setConnecting(false)
-          setConnected(false)
-          break
-          
-        case 'message':
-          if (data?.message) {
-            const msg = data.message as ChatMessage
-            setMessages(prev => {
-              const newMap = new Map(prev)
-              const conversationMessages = newMap.get(msg.conversationId) || []
-              newMap.set(msg.conversationId, [...conversationMessages, msg])
-              return newMap
-            })
-          }
-          break
-          
-        case 'memberUpdate':
-          setMembers(prev => {
-            const updated = [...prev]
-            const index = updated.findIndex(m => m.jid === data.jid)
-            if (index >= 0) {
-              updated[index] = data.member
-            } else {
-              updated.push(data.member)
-            }
-            return updated.sort((a, b) => a.displayName.localeCompare(b.displayName))
-          })
-          break
-          
-        case 'channelAdded':
-          if (data?.channel) {
-            setChannels(prev => {
-              const exists = prev.find(c => c.id === data.channel.id)
-              if (exists) return prev
-              return [...prev, data.channel].sort((a, b) => a.name.localeCompare(b.name))
-            })
-          }
-          break
-      }
-    }
+    console.log('[ChatContext] Subscribing to client')
+    const unsubscribe = client.subscribe((newState) => {
+      setState(newState)
+    })
 
-    service.on(handleEvent)
-
-    // Sync state periodically
-    const interval = setInterval(() => {
-      if (service.isConnected()) {
-        setMembers(service.getMembers())
-        setChannels(service.getChannels())
-        setCurrentJid(service.getCurrentJid())
-      }
-    }, 1000)
+    // Connect on mount (safe to call multiple times)
+    client.connect()
 
     return () => {
-      service.off(handleEvent)
-      clearInterval(interval)
+      console.log('[ChatContext] Unsubscribing from client')
+      unsubscribe()
+      // Note: We don't disconnect here because other components might still be using the client
+      // The client persists across React re-renders
     }
-  }, [service])
+  }, [client])
 
-  const connect = useCallback(async (serverUrl: string, username: string, networkId: number) => {
-    try {
-      setConnecting(true)
-      setError(null)
-      await service.connect(serverUrl, username, networkId)
-    } catch (err: any) {
-      setError(err.message || 'Failed to connect')
-      setConnecting(false)
-      setConnected(false)
-    }
-  }, [service])
+  const setCurrentChannel = useCallback((channelId: string | null) => {
+    client.setCurrentChannel(channelId)
+  }, [client])
 
-  const disconnect = useCallback(async () => {
-    await service.disconnect()
-  }, [service])
+  const createChannel = useCallback((name: string): ChatChannel => {
+    return client.createChannel(name)
+  }, [client])
 
-  const sendMessage = useCallback(async (conversationId: string, body: string) => {
-    await service.sendMessage(conversationId, body)
-  }, [service])
-
-  const createChannel = useCallback(async (name: string, jid: string) => {
-    return await service.createChannel(name, jid)
-  }, [service])
-
-  const setCurrentConversation = useCallback((conversationId: string | null) => {
-    setCurrentConversationId(conversationId)
-    // Mark channel as read
-    if (conversationId) {
-      setChannels(prev => prev.map(c => 
-        c.id === conversationId ? { ...c, unreadCount: 0 } : c
-      ))
-    }
-  }, [])
+  const sendMessage = useCallback((body: string) => {
+    client.sendMessage(body)
+  }, [client])
 
   return (
     <ChatContext.Provider
       value={{
-        connected,
-        connecting,
-        error,
-        connect,
-        disconnect,
-        messages,
-        members,
-        channels,
-        currentConversationId,
-        setCurrentConversation,
-        sendMessage,
+        connected: state.connected,
+        connecting: state.connecting,
+        error: state.error,
+        selfId: state.selfId,
+        members: state.members,
+        channels: state.channels,
+        currentChannelId: state.currentChannelId,
+        setCurrentChannel,
         createChannel,
-        currentJid,
+        messages: state.messages,
+        sendMessage,
+        displayName: state.displayName,
       }}
     >
       {children}

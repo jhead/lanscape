@@ -4,7 +4,7 @@ import { CreateChannelModal } from './CreateChannelModal'
 import './ChannelList.css'
 
 export function ChannelList() {
-  const { channels, currentConversationId, setCurrentConversation } = useChat()
+  const { channels, currentChannelId, setCurrentChannel } = useChat()
   const [showCreateModal, setShowCreateModal] = useState(false)
 
   return (
@@ -14,34 +14,29 @@ export function ChannelList() {
         <button
           type="button"
           onClick={() => setShowCreateModal(true)}
-          className="channel-create-btn"
-          title="Create or join channel"
+          className="channel-list-add-btn"
+          title="Create channel"
         >
           +
         </button>
       </div>
       <div className="channel-list-items">
-        {channels.length === 0 ? (
-          <div className="channel-list-empty">
-            No channels yet. Click + to create or join one.
-          </div>
-        ) : (
-          channels.map((channel) => (
-            <button
-              key={channel.id}
-              type="button"
-              onClick={() => setCurrentConversation(channel.id)}
-              className={`channel-item ${currentConversationId === channel.id ? 'active' : ''}`}
-            >
-              <span className="channel-item-icon">#</span>
-              <span className="channel-item-name">{channel.name}</span>
-              {channel.unreadCount > 0 && (
-                <span className="channel-item-unread">{channel.unreadCount}</span>
-              )}
-            </button>
-          ))
+        {channels.map((channel) => (
+          <button
+            key={channel.id}
+            type="button"
+            onClick={() => setCurrentChannel(channel.id)}
+            className={`channel-list-item ${currentChannelId === channel.id ? 'active' : ''}`}
+          >
+            <span className="channel-hash">#</span>
+            <span className="channel-name">{channel.name}</span>
+          </button>
+        ))}
+        {channels.length === 0 && (
+          <div className="channel-list-empty">No channels yet</div>
         )}
       </div>
+      
       {showCreateModal && (
         <CreateChannelModal onClose={() => setShowCreateModal(false)} />
       )}

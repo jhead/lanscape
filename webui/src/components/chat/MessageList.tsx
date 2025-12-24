@@ -3,27 +3,22 @@ import { useChat } from '../../contexts/ChatContext'
 import { MessageItem } from './MessageItem'
 import './MessageList.css'
 
-interface MessageListProps {
-  conversationId: string
-}
-
-export function MessageList({ conversationId }: MessageListProps) {
+export function MessageList() {
   const { messages } = useChat()
-  const conversationMessages = messages.get(conversationId) || []
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [conversationMessages])
+  }, [messages])
 
   return (
     <div className="message-list">
-      {conversationMessages.length === 0 ? (
+      {messages.length === 0 ? (
         <div className="message-list-empty">
           No messages yet. Start the conversation!
         </div>
       ) : (
-        conversationMessages.map((message) => (
+        messages.map((message) => (
           <MessageItem key={message.id} message={message} />
         ))
       )}

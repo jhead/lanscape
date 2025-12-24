@@ -1,28 +1,38 @@
-import { useState } from 'react'
 import { useChat } from '../../contexts/ChatContext'
 import { Sidebar } from './Sidebar'
 import { ChatWindow } from './ChatWindow'
-import { ConnectionForm } from './ConnectionForm'
 import './ChatLayout.css'
 
 export function ChatLayout() {
-  const { connected } = useChat()
+  const { connecting, error } = useChat()
+
+  if (connecting) {
+    return (
+      <div className="chat-layout">
+        <div className="chat-loading">
+          <div className="chat-loading-spinner"></div>
+          <span>Connecting to chat...</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="chat-layout">
+        <div className="chat-error">
+          <span className="chat-error-icon">⚠</span>
+          <h3>Connection Error</h3>
+          <p>{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="chat-layout">
-      {!connected ? (
-        <div className="chat-connection-container">
-          <div className="chat-branding">
-            <span className="chat-brand">LANSCAPE</span>
-          </div>
-          <ConnectionForm />
-        </div>
-      ) : (
-        <>
-          <Sidebar />
-          <ChatWindow />
-        </>
-      )}
+      <Sidebar />
+      <ChatWindow />
     </div>
   )
 }

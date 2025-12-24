@@ -4,27 +4,26 @@ import { MessageInput } from './MessageInput'
 import './ChatWindow.css'
 
 export function ChatWindow() {
-  const { currentConversationId, channels } = useChat()
-  const currentChannel = channels.find(c => c.id === currentConversationId)
+  const { currentChannelId, channels } = useChat()
+  const currentChannel = channels.find(c => c.id === currentChannelId)
 
   return (
     <div className="chat-window">
-      {currentConversationId ? (
+      {currentChannelId && currentChannel ? (
         <>
           <div className="chat-window-header">
-            <span className="chat-window-title">
-              {currentChannel?.name || currentConversationId.split('@')[0]}
-            </span>
+            <span className="chat-window-hash">#</span>
+            <span className="chat-window-title">{currentChannel.name}</span>
           </div>
-          <MessageList conversationId={currentConversationId} />
-          <MessageInput conversationId={currentConversationId} />
+          <MessageList />
+          <MessageInput />
         </>
       ) : (
         <div className="chat-window-empty">
           <div className="chat-window-empty-content">
             <span className="chat-window-empty-icon">💬</span>
-            <h3>Select a conversation</h3>
-            <p>Choose a channel or member from the sidebar to start chatting</p>
+            <h3>Select a channel</h3>
+            <p>Choose a channel from the sidebar to start chatting</p>
           </div>
         </div>
       )}
