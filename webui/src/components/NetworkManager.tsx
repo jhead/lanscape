@@ -14,6 +14,9 @@ export function NetworkManager() {
           <Link to="/networks" className="nav-link active">
             Networks
           </Link>
+          <Link to="/webrtc-test" className="nav-link">
+            WebRTC Test
+          </Link>
         </nav>
       </div>
       <div className="network-manager-content">

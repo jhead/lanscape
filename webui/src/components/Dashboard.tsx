@@ -14,6 +14,9 @@ export function Dashboard() {
           <Link to="/networks" className="nav-link">
             Networks
           </Link>
+          <Link to="/webrtc-test" className="nav-link">
+            WebRTC Test
+          </Link>
         </nav>
         <ChatLayout />
       </div>
