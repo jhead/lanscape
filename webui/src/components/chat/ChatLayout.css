@@ -15,7 +15,7 @@
   justify-content: center;
   gap: 1rem;
   color: #a1a1aa;
-  font-size: 0.9375rem;
+  font-size: 13px;
 }
 
 .chat-loading-spinner {
@@ -51,14 +51,14 @@
 
 .chat-error h3 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 15px;
   color: #e4e4e7;
   font-weight: 600;
 }
 
 .chat-error p {
   margin: 0;
-  font-size: 0.9375rem;
+  font-size: 13px;
   color: #71717a;
   max-width: 400px;
 }

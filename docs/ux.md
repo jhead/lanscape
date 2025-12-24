@@ -1,188 +1,197 @@
-# Lanscape UI/UX Design Principles
+# Lanscape UI / UX Style Guide
 
-## Philosophy
+## Design Intent
 
-Lanscape's interface follows a **compact, sleek, modern** design language inspired by contemporary chat and gaming applications. The goal is to feel fast, focused, and premium without visual clutter.
+Lanscape blends modern chat UX (Discord, Slack) with restrained terminal and late-90s/early-2000s counter-culture aesthetics.
+The interface is **dark, dense, and utilitarian**, with subtle retro cues: contrast, glow, precision, and immediacy.
+Avoid novelty terminal tropes. No neon overload. No monospaced dominance. Everything feels engineered, not styled.
 
 ---
 
 ## Core Principles
 
-### 1. Unified Containers
+### 1. Integrated Surfaces
 
-UI elements should feel **integrated**, not floating separately. For example:
-- Text inputs are seamlessly embedded within their surrounding container
-- Buttons sit inside the same box as inputs, not adjacent to them
-- Avoid double borders or redundant visual boundaries
+UI elements live inside **single, continuous containers**.
 
-**Bad:** Input field with its own border + separate send button with its own border  
-**Good:** Single container with rounded corners containing both input and button
+* Inputs, actions, and metadata share one surface
+* One border or background per region, never layered
+* Containers define hierarchy, not shadows
 
-### 2. Consistent Alignment
+### 2. Density by Default
 
-Adjacent UI regions should **align visually**:
-- Sidebar footer and main content footer share the same height (52px)
-- Horizontal padding is consistent across regions (1rem)
-- Elements at the same vertical level should feel like a single cohesive row
+The product should feel **fast and information-rich**.
 
-### 3. Purposeful Spacing
+* Compact spacing communicates power and fluency
+* Empty space must justify itself functionally
+* Touch targets remain accessible, not inflated
 
-Every pixel of padding should serve a purpose:
-- No decorative margins or "breathing room" that fragments the interface
-- Compact by default; density conveys efficiency
-- Padding exists for touch targets and readability, not aesthetics alone
+### 3. Alignment Is Structure
 
-### 4. Consistent Corner Radius
+Alignment communicates system logic.
 
-Use a unified `border-radius` scale:
-- **4px** — Small elements (buttons, input wrappers, tags)
-- **8px** — Medium containers (cards, modals)
-- **12px** — Large containers (main cards, dialogs)
+* Shared edges across panels
+* Identical heights for parallel regions
+* Horizontal rhythm is consistent across the app
 
-Avoid mixing rounded and square corners on adjacent elements.
+### 4. Controlled Contrast
+
+High contrast without harshness.
+
+* Dark surfaces, light text
+* Accents are deliberate and sparse
+* Visual noise is treated as a bug
 
 ---
 
 ## Color System
 
-### Base Palette (Dark Theme)
+### Base (Dark)
 
-| Role | Hex | Usage |
-|------|-----|-------|
-| Background | `#0a0a0a` | App background |
-| Surface | `#18181b` | Panels, sidebars |
-| Surface Elevated | `#1a1a1d` | Headers, footers |
-| Container | `#27272a` | Input backgrounds, cards |
-| Container Hover | `#2d2d30` | Focus/hover states |
-| Border | `#27272a` | Dividers, separators |
-| Border Subtle | `#3f3f46` | Secondary borders |
+| Token            | Value     | Usage                    |
+| ---------------- | --------- | ------------------------ |
+| Background       | `#0a0a0a` | App root                 |
+| Surface          | `#18181b` | Primary panels           |
+| Surface Elevated | `#1a1a1d` | Headers, footers         |
+| Container        | `#27272a` | Inputs, message composer |
+| Container Hover  | `#2d2d30` | Focus / hover            |
+| Border           | `#27272a` | Dividers                 |
+| Border Subtle    | `#3f3f46` | Secondary separators     |
 
 ### Text
 
-| Role | Hex | Usage |
-|------|-----|-------|
-| Primary | `#e4e4e7` | Body text |
-| Secondary | `#a1a1aa` | Muted text |
-| Tertiary | `#71717a` | Placeholders, hints |
-| Inverse | `#ffffff` | Text on accent backgrounds |
+| Token     | Value     | Usage                    |
+| --------- | --------- | ------------------------ |
+| Primary   | `#e4e4e7` | Core content             |
+| Secondary | `#a1a1aa` | Metadata                 |
+| Muted     | `#71717a` | Placeholders, timestamps |
+| Inverse   | `#ffffff` | On accent fills          |
 
-### Accent Colors
+### Accents
 
-| Role | Hex | Usage |
-|------|-----|-------|
-| **Brand Green** | `#50fa7b` | Primary action, send buttons, online status |
-| Brand Green Hover | `#69ff90` | Hover state |
-| Brand Green Muted | `rgba(80, 250, 123, 0.15)` | Subtle hover backgrounds |
-| Blue | `#3b82f6` | Links, secondary actions |
-| Red | `#f87171` | Destructive actions, errors |
-| Yellow | `#fbbf24` | Warnings, offline states |
+Accents reference terminal culture without mimicking it.
 
----
-
-## Component Patterns
-
-### Input + Action Containers
-
-```
-┌──────────────────────────────────────────────────┐
-│  [placeholder text...]                      [▶]  │
-└──────────────────────────────────────────────────┘
-```
-
-- Container: `background: #27272a`, `border-radius: 4px`, `height: 36px`
-- Input: Transparent background, no border, vertically centered
-- Action button: Icon only, no background, accent color on enabled state
-- Focus state: Container background lightens slightly (`#2d2d30`)
-
-### Footer Bars
-
-- Fixed height: `52px`
-- Background: `#1a1a1d`
-- Border: `1px solid #27272a` on the separating edge
-- Content vertically centered with `padding: 0 1rem`
-
-### Buttons
-
-| Type | Style |
-|------|-------|
-| Icon Button | Transparent, 24×24px, icon color as accent |
-| Primary | Brand green background, white text |
-| Secondary | Container background, primary text |
-| Destructive | Container background, red text on hover |
+| Token             | Value                   | Usage                   |
+| ----------------- | ----------------------- | ----------------------- |
+| Brand Green       | `#50fa7b`               | Primary actions, online |
+| Brand Green Muted | `rgba(80,250,123,0.15)` | Subtle highlights       |
+| Blue              | `#3b82f6`               | Links                   |
+| Red               | `#f87171`               | Errors, destructive     |
+| Yellow            | `#fbbf24`               | Warnings, idle          |
 
 ---
 
 ## Typography
 
-- **Font Family:** System fonts (`-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`)
-- **Base Size:** `0.8125rem` (13px) for compact UI, `0.9375rem` (15px) for comfortable
-- **Line Height:** 1.375 for single-line, 1.5 for multi-line
+* **Primary:** System UI stack
+* **Optional Accent:** Neutral grotesk or humanist sans for headers
+* **No default monospace**; reserve monospace strictly for code/log output
+
+| Usage          | Size      |
+| -------------- | --------- |
+| Dense UI       | 13px      |
+| Comfortable UI | 15px      |
+| Line Height    | 1.375–1.5 |
+
+Text should feel technical, not playful.
+
+---
+
+## Layout Regions (Chat App)
+
+### Sidebar (Servers / Channels)
+
+* Fixed width
+* Surface background
+* Vertical lists are compact, scroll-first
+* Active state uses background fill, not pills
+
+### Chat Timeline
+
+* Flush top to bottom
+* Messages stack tightly
+* Avatars optional; when present, fixed and aligned
+* Timestamps are muted and secondary
+
+### Composer (Message Input)
+
+Single integrated container.
+
+```
+┌──────────────────────────────────────────────┐
+│ > type message…                        [↵]   │
+└──────────────────────────────────────────────┘
+```
+
+* Height: `36px`
+* Background: Container
+* Input: Transparent, borderless
+* Action: Icon only, accent on enabled
+* Focus: Background shift, no outline
+
+---
+
+## Common Components
+
+### Buttons
+
+* **Icon Button:** 24×24, transparent
+* **Primary:** Brand green fill
+* **Secondary:** Container background
+* **Destructive:** Neutral until hover, then red text
+
+No gradients. No shadows.
+
+### Lists
+
+* Row height is consistent
+* Hover state is subtle fill
+* Active state is persistent, not animated
+
+### Modals / Dialogs
+
+* Radius: 8px
+* No drop shadow or minimal ambient only
+* Content density matches main UI
 
 ---
 
 ## Interaction States
 
-### Enabled
-- Full opacity
-- Accent color for actionable elements
+* **Hover:** Slight background lift or text brighten
+* **Active:** Minor opacity or scale (≤ 0.95)
+* **Focus:** Container-level change only
+* **Disabled:** Muted text, reduced contrast
 
-### Disabled
-- Reduced opacity or muted colors (`#3f3f46`)
-- `cursor: not-allowed`
+No glow rings. No animated borders.
 
-### Hover
-- Subtle background change or color brighten
-- Avoid dramatic transforms (scale max: 0.95 on active)
+---
 
-### Focus
-- Container-level focus indication (background shift)
-- Avoid outline rings; prefer integrated visual feedback
+## Corner Radius Scale
+
+* 4px — Inputs, buttons, tags
+* 8px — Cards, modals
+* 12px — Rare, large containers only
+
+Never mix radii within a single component.
 
 ---
 
 ## Anti-Patterns
 
-❌ **Double borders** — Input inside container both having visible borders  
-❌ **Floating elements** — Buttons or inputs with padding/margin creating visual gaps  
-❌ **Inconsistent radii** — Mixing 4px and 8px corners on adjacent elements  
-❌ **Heavy shadows** — Drop shadows on interactive elements (prefer flat)  
-❌ **Bright backgrounds** — Avoid light/white surfaces in dark theme  
-❌ **Decorative spacing** — Padding that exists only for "breathing room"
+* Double borders
+* Floating, detached buttons
+* Heavy shadows or neumorphism
+* Bright or light surfaces
+* Decorative spacing
+* Terminal cosplay (green text, scanlines, CRT effects)
 
 ---
 
 ## Implementation Notes
 
-### Overriding Global Styles
+* Prefer flat color tokens over ad-hoc values
+* Override global styles aggressively when needed
+* Migrate to CSS variables for all color, radius, and sizing primitives
 
-When component styles conflict with global resets, use targeted overrides:
-
-```css
-.my-input {
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  background: transparent !important;
-}
-
-.my-button {
-  min-width: 24px; /* Override global min-width */
-}
-```
-
-### CSS Custom Properties
-
-Consider migrating to CSS variables for consistency:
-
-```css
-:root {
-  --color-bg: #0a0a0a;
-  --color-surface: #18181b;
-  --color-container: #27272a;
-  --color-accent: #50fa7b;
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --height-footer: 52px;
-}
-```
-
+The interface should feel like a **tool**, not a theme.

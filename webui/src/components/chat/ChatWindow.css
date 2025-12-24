@@ -13,21 +13,21 @@
   display: flex;
   align-items: center;
   border-bottom: 1px solid #27272a;
-  background: #18181b;
+  background: #1a1a1d;
   flex-shrink: 0;
 }
 
 .chat-window-hash {
-  font-size: 1rem;
+  font-size: 13px;
   font-weight: 400;
   color: #71717a;
   margin-right: 0.25rem;
 }
 
 .chat-window-title {
-  font-size: 0.9375rem;
+  font-size: 13px;
   font-weight: 600;
-  color: #ffffff;
+  color: #e4e4e7;
 }
 
 .chat-window-empty {
@@ -50,14 +50,14 @@
 }
 
 .chat-window-empty-content h3 {
-  font-size: 1.25rem;
+  font-size: 15px;
   color: #e4e4e7;
   margin: 0 0 0.5rem 0;
   font-weight: 600;
 }
 
 .chat-window-empty-content p {
-  font-size: 0.9375rem;
+  font-size: 13px;
   color: #71717a;
   margin: 0;
 }

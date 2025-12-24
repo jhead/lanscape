@@ -18,7 +18,7 @@
   background: rgba(251, 191, 36, 0.1);
   border-radius: 4px;
   color: #fbbf24;
-  font-size: 0.6875rem;
+  font-size: 11px;
   flex-shrink: 0;
 }
 
@@ -28,7 +28,7 @@
 }
 
 .message-input-wrapper.offline {
-  background: #232326;
+  background: #1f1f22;
 }
 
 .message-input-wrapper.offline .message-input {
@@ -66,7 +66,7 @@
   width: auto;
   height: 36px;
   padding: 0;
-  font-size: 0.8125rem;
+  font-size: 13px;
   font-family: inherit;
   background: transparent !important;
   border: none !important;
@@ -133,6 +133,7 @@
   flex-shrink: 0;
   padding: 0;
   box-shadow: none;
+  opacity: 1;
 }
 
 .message-send-btn svg {
@@ -160,5 +161,5 @@
 
 .message-send-btn:not(:disabled):hover {
   background: rgba(80, 250, 123, 0.15);
-  color: #69ff90;
+  color: #50fa7b;
 }
