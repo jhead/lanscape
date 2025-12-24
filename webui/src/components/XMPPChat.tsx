@@ -1,6 +1,4 @@
 import { useState, useEffect, useRef } from 'react'
-import { client, xml, jid } from '@xmpp/client'
-import debug from '@xmpp/debug'
 
 interface Message {
   id: string
@@ -22,7 +20,6 @@ export function XMPPChat() {
   const [error, setError] = useState<string | null>(null)
   const [connectionStatus, setConnectionStatus] = useState<string>('Disconnected')
   
-  const xmppClientRef = useRef<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const scrollToBottom = () => {
@@ -43,118 +40,19 @@ export function XMPPChat() {
       setConnecting(true)
       setError(null)
       setConnectionStatus('Connecting...')
-      console.log('[XMPP] Attempting to connect to:', serverUrl)
+      console.log('[XMPP Stub] Simulating connection to:', serverUrl)
 
-      // Parse username@domain
-      let jidString = username.trim()
-      if (!jidString.includes('@')) {
-        // Extract domain from server URL if username doesn't include domain
-        let domain = 'localhost'
-        try {
-          const urlMatch = serverUrl.match(/(?:ws|wss|http|https):\/\/([^\/:]+)/)
-          if (urlMatch && urlMatch[1]) {
-            domain = urlMatch[1]
-          }
-        } catch (e) {
-          console.warn('[XMPP] Could not extract domain from server URL')
-        }
-        jidString = `${jidString}@${domain}`
-      }
-      const userJid = jid(jidString)
-      
-      console.log('[XMPP] Connecting as:', userJid.toString())
+      // Simulate connection delay
+      await new Promise(resolve => setTimeout(resolve, 500))
 
-      // Create WebSocket URL - convert http/https to ws/wss
-      let wsUrl = serverUrl.trim()
-      if (wsUrl.startsWith('http://')) {
-        wsUrl = wsUrl.replace('http://', 'ws://')
-      } else if (wsUrl.startsWith('https://')) {
-        wsUrl = wsUrl.replace('https://', 'wss://')
-      } else if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
-        // Default to wss for security
-        wsUrl = `wss://${wsUrl}`
-      }
-
-      // Ensure the WebSocket path includes /xmpp-websocket or similar if no path is specified
-      // Check if there's a path after the host (excluding query params and fragments)
-      const pathMatch = wsUrl.match(/^(wss?:\/\/[^\/]+)(\/.*)?(\?.*)?(#.*)?$/)
-      if (pathMatch && (!pathMatch[2] || pathMatch[2] === '/')) {
-        // No path or just root path, add default XMPP WebSocket path
-        wsUrl = `${pathMatch[1]}/xmpp-websocket${pathMatch[3] || ''}${pathMatch[4] || ''}`
-      }
-
-      console.log('[XMPP] WebSocket URL:', wsUrl)
-
-      const xmppClient = client({
-        service: wsUrl,
-        domain: userJid.domain,
-        username: userJid.local,
-        password: password,
-      })
-
-      // Enable debug logging
-      debug(xmppClient, true)
-
-      xmppClientRef.current = xmppClient
-
-      // Handle connection events
-      xmppClient.on('online', async (address) => {
-        console.log('[XMPP] Connected as:', address.toString())
-        setConnected(true)
-        setConnecting(false)
-        setConnectionStatus('Connected')
-        
-        // Send presence to appear online
-        await xmppClient.send(xml('presence'))
-        console.log('[XMPP] Presence sent')
-      })
-
-      xmppClient.on('offline', () => {
-        console.log('[XMPP] Disconnected')
-        setConnected(false)
-        setConnectionStatus('Disconnected')
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          from: 'System',
-          body: 'Disconnected from server',
-          timestamp: new Date(),
-          type: 'received'
-        }])
-      })
-
-      xmppClient.on('error', (err) => {
-        console.error('[XMPP] Error:', err)
-        setError(err.message || 'Connection error occurred')
-        setConnecting(false)
-        setConnectionStatus('Error')
-        setConnected(false)
-      })
-
-      xmppClient.on('stanza', async (stanza) => {
-        console.log('[XMPP] Received stanza:', stanza.toString())
-        
-        if (stanza.is('message')) {
-          const body = stanza.getChildText('body')
-          if (body) {
-            const from = stanza.attrs.from || 'Unknown'
-            setMessages(prev => [...prev, {
-              id: `${Date.now()}-${Math.random()}`,
-              from: from.split('/')[0], // Remove resource part
-              body: body,
-              timestamp: new Date(),
-              type: 'received'
-            }])
-          }
-        }
-      })
-
-      // Start the connection
-      await xmppClient.start()
-      console.log('[XMPP] Connection started')
-
+      // Stub: Simulate successful connection
+      setConnected(true)
+      setConnecting(false)
+      setConnectionStatus('Connected (Stub Mode)')
+      console.log('[XMPP Stub] Connected (simulated)')
     } catch (err: any) {
-      console.error('[XMPP] Connection failed:', err)
-      setError(err.message || 'Failed to connect to XMPP server')
+      console.error('[XMPP Stub] Connection failed:', err)
+      setError(err.message || 'Failed to connect')
       setConnecting(false)
       setConnectionStatus('Connection failed')
       setConnected(false)
@@ -162,39 +60,30 @@ export function XMPPChat() {
   }
 
   const disconnect = async () => {
-    if (xmppClientRef.current) {
-      try {
-        await xmppClientRef.current.stop()
-        console.log('[XMPP] Disconnected')
-      } catch (err) {
-        console.error('[XMPP] Error disconnecting:', err)
-      }
-      xmppClientRef.current = null
-    }
+    console.log('[XMPP Stub] Disconnecting')
     setConnected(false)
     setConnectionStatus('Disconnected')
+    setMessages(prev => [...prev, {
+      id: Date.now().toString(),
+      from: 'System',
+      body: 'Disconnected from server (stub mode)',
+      timestamp: new Date(),
+      type: 'received'
+    }])
   }
 
   const sendMessage = async () => {
-    if (!messageInput.trim() || !recipient.trim() || !xmppClientRef.current) {
+    if (!messageInput.trim() || !recipient.trim() || !connected) {
       return
     }
 
     try {
-      const recipientJid = jid(recipient)
-      const message = xml(
-        'message',
-        { to: recipientJid.toString(), type: 'chat' },
-        xml('body', {}, messageInput)
-      )
+      console.log('[XMPP Stub] Message sent to:', recipient, messageInput)
 
-      await xmppClientRef.current.send(message)
-      console.log('[XMPP] Message sent to:', recipientJid.toString())
-
-      // Add to local messages
+      // Add to local messages (stub mode - message not actually sent)
       setMessages(prev => [...prev, {
         id: `${Date.now()}-${Math.random()}`,
-        from: recipientJid.toString(),
+        from: recipient,
         body: messageInput,
         timestamp: new Date(),
         type: 'sent'
@@ -202,7 +91,7 @@ export function XMPPChat() {
 
       setMessageInput('')
     } catch (err: any) {
-      console.error('[XMPP] Error sending message:', err)
+      console.error('[XMPP Stub] Error sending message:', err)
       setError(err.message || 'Failed to send message')
     }
   }
@@ -227,7 +116,7 @@ export function XMPPChat() {
               type="text"
               value={serverUrl}
               onChange={(e) => setServerUrl(e.target.value)}
-              placeholder="wss://xmpp.example.com:5281/xmpp-websocket"
+              placeholder="wss://example.com/ws"
               disabled={connecting}
             />
           </div>
