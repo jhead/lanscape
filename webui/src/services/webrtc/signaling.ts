@@ -513,7 +513,8 @@ export class WebRTCSignalingClient {
         await peerConn.pc.addIceCandidate(candidate)
       } catch (error) {
         // Some candidates might fail to apply if they are for a different m-line, that's okay
-        console.warn('[WebRTC] Note: ICE candidate not applied:', error.message)
+        const message = error instanceof Error ? error.message : String(error)
+        console.warn('[WebRTC] Note: ICE candidate not applied:', message)
       }
     }
     
