@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     environment:
       - PORT=8080
+      - DATABASE_URL=file:/app/data/lanscaped.db?_foreign_keys=on
     volumes:
       - lanscaped-data:/app/data
     networks:
