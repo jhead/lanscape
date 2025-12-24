@@ -1,4 +1,4 @@
-import { WebRTCSignalingClient, SignalingEvent, SignalingConfig } from '../webrtc/Signaling'
+import { WebRTCSignalingClient, SignalingEvent, SignalingConfig } from '../webrtc/signaling'
 import { PeerTransport, PeerTransportEvent, PeerTransportListener, Peer } from './PeerTransport'
 
 /**

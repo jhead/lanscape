@@ -10,6 +10,8 @@ interface ChatContextType {
   connecting: boolean
   error: string | null
   selfId: string | null
+  isOnline: boolean  // WebRTC peer connectivity status
+  persistenceReady: boolean  // IndexedDB loaded
 
   // Members (from awareness)
   members: ChatMember[]
@@ -22,10 +24,13 @@ interface ChatContextType {
 
   // Messages (from Y.js CRDT)
   messages: ChatMessage[]
-  sendMessage: (body: string) => void
+  sendMessage: (body: string) => boolean
 
   // User info
   displayName: string
+
+  // Dev tools
+  clearHistory: () => Promise<void>
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined)
@@ -63,8 +68,12 @@ export function ChatProvider({ children }: { children: ReactNode }) {
     return client.createChannel(name)
   }, [client])
 
-  const sendMessage = useCallback((body: string) => {
-    client.sendMessage(body)
+  const sendMessage = useCallback((body: string): boolean => {
+    return client.sendMessage(body)
+  }, [client])
+
+  const clearHistory = useCallback(async (): Promise<void> => {
+    await client.clearHistory()
   }, [client])
 
   return (
@@ -74,6 +83,8 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         connecting: state.connecting,
         error: state.error,
         selfId: state.selfId,
+        isOnline: state.isOnline,
+        persistenceReady: state.persistenceReady,
         members: state.members,
         channels: state.channels,
         currentChannelId: state.currentChannelId,
@@ -82,6 +93,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
         messages: state.messages,
         sendMessage,
         displayName: state.displayName,
+        clearHistory,
       }}
     >
       {children}

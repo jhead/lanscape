@@ -27,6 +27,29 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', 'Roboto', sans-serif;
 }
 
+.sidebar-settings-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.sidebar-settings-btn:hover {
+  background: #27272a;
+  color: #e4e4e7;
+}
+
+.sidebar-settings-btn:active {
+  transform: scale(0.95);
+}
+
 .sidebar-disconnect-btn {
   background: transparent;
   border: none;
@@ -87,9 +110,18 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  flex-shrink: 0;
+  transition: all 0.2s;
+}
+
+.sidebar-user-status.online {
   background: #22c55e;
   box-shadow: 0 0 4px rgba(34, 197, 94, 0.5);
-  flex-shrink: 0;
+}
+
+.sidebar-user-status.offline {
+  background: #71717a;
+  box-shadow: none;
 }
 
 .sidebar-user-name {
@@ -100,4 +132,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+}
+
+.sidebar-connection-label {
+  font-size: 0.6875rem;
+  color: #52525b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
 }

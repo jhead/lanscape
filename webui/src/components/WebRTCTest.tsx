@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Link } from 'react-router-dom'
-import { WebRTCSignalingClient, SignalingConfig } from '../services/webrtc/Signaling'
-import type { PeerConnection } from '../services/webrtc/Signaling'
+import { WebRTCSignalingClient, SignalingConfig } from '../services/webrtc/signaling'
+import type { PeerConnection } from '../services/webrtc/signaling'
 import './WebRTCTest.css'
 
 // Support environment variable for signaling URL, with fallback to default

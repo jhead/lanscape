@@ -1,4 +1,5 @@
 import * as Y from 'yjs'
+import { IndexeddbPersistence } from 'y-indexeddb'
 import { WebRTCTransport } from '../transport'
 import { YjsSync, AwarenessState } from '../sync'
 import { getCurrentUser } from '../../utils/api'
@@ -6,6 +7,9 @@ import { getCurrentUser } from '../../utils/api'
 // Default signaling URL from environment or fallback
 const DEFAULT_SIGNALING_URL = import.meta.env.VITE_SIGNALING_URL || 'ws://localhost:8081'
 const DEFAULT_TOPIC = import.meta.env.VITE_CHAT_TOPIC || 'lanscape-chat'
+
+// IndexedDB document name prefix - namespaced per user
+const IDB_DOC_PREFIX = 'lanscape-chat'
 
 // Types for chat data stored in Y.js
 export interface ChatChannel {
@@ -40,6 +44,8 @@ export type ChatClientState = {
   channels: ChatChannel[]
   messages: ChatMessage[]
   currentChannelId: string | null
+  isOnline: boolean  // WebRTC peer connectivity status
+  persistenceReady: boolean  // IndexedDB loaded
 }
 
 export type ChatClientListener = (state: ChatClientState) => void
@@ -57,6 +63,8 @@ export class ChatClient {
   private doc: Y.Doc | null = null
   private transport: WebRTCTransport | null = null
   private sync: YjsSync | null = null
+  private persistence: IndexeddbPersistence | null = null
+  private currentUserId: string | null = null
   
   private state: ChatClientState = {
     connected: false,
@@ -68,6 +76,8 @@ export class ChatClient {
     channels: [],
     messages: [],
     currentChannelId: null,
+    isOnline: false,
+    persistenceReady: false,
   }
   
   private listeners = new Set<ChatClientListener>()
@@ -136,15 +146,32 @@ export class ChatClient {
     this.setState({ connecting: true, error: null })
 
     try {
-      // Get username from JWT
+      // Get username from JWT - use handle as unique identifier for persistence
       const userInfo = await getCurrentUser()
       const username = userInfo.user_handle || 'Anonymous'
+      // Use username as user ID since it's unique per user
+      const userId = username
+      this.currentUserId = userId
       this.setState({ displayName: username })
       console.log('[ChatClient] User:', username)
 
       // Create Y.js document
       const doc = new Y.Doc()
       this.doc = doc
+
+      // Create IndexedDB persistence with per-user namespace
+      const idbDocName = `${IDB_DOC_PREFIX}-${userId}`
+      console.log('[ChatClient] Creating IndexedDB persistence:', idbDocName)
+      this.persistence = new IndexeddbPersistence(idbDocName, doc)
+
+      // Wait for local data to load from IndexedDB
+      await new Promise<void>((resolve) => {
+        this.persistence!.on('synced', () => {
+          console.log('[ChatClient] IndexedDB persistence synced')
+          this.setState({ persistenceReady: true })
+          resolve()
+        })
+      })
 
       // Set up Y.js observers
       const channelsMap = doc.getMap<ChatChannel>('channels')
@@ -225,8 +252,12 @@ export class ChatClient {
           return a.name.localeCompare(b.name)
         })
 
-        console.log('[ChatClient] Members updated:', memberList.length)
-        this.setState({ members: memberList })
+        // Online if we have peers (other than self) or if signaling is connected
+        const hasOtherPeers = memberList.length > 1 || states.size > 0
+        const isOnline = transport.getConnectedPeers().length > 0 || hasOtherPeers
+
+        console.log('[ChatClient] Members updated:', memberList.length, 'online:', isOnline)
+        this.setState({ members: memberList, isOnline })
       })
 
       // Create default "general" channel if none exist
@@ -247,7 +278,7 @@ export class ChatClient {
       this.syncChannelsFromYjs()
       this.setCurrentChannel('general')
 
-      // Set initial member list
+      // Set initial member list - mark as online since signaling is connected
       this.setState({
         members: [{
           id: username,
@@ -256,6 +287,7 @@ export class ChatClient {
         }],
         connected: true,
         connecting: false,
+        isOnline: true,
       })
 
       console.log('[ChatClient] Connected successfully')
@@ -284,6 +316,8 @@ export class ChatClient {
       messages: [],
       currentChannelId: null,
       error: null,
+      isOnline: false,
+      persistenceReady: false,
     })
   }
 
@@ -296,10 +330,15 @@ export class ChatClient {
       this.transport.destroy()
       this.transport = null
     }
+    if (this.persistence) {
+      this.persistence.destroy()
+      this.persistence = null
+    }
     if (this.doc) {
       this.doc.destroy()
       this.doc = null
     }
+    this.currentUserId = null
   }
 
   /**
@@ -342,12 +381,18 @@ export class ChatClient {
 
   /**
    * Send a message to the current channel
+   * Returns false if message cannot be sent (offline or not connected)
    */
-  sendMessage(body: string): void {
+  sendMessage(body: string): boolean {
     const channelId = this.state.currentChannelId
     if (!channelId || !this.doc) {
       console.warn('[ChatClient] Cannot send message: not connected or no channel selected')
-      return
+      return false
+    }
+
+    if (!this.state.isOnline) {
+      console.warn('[ChatClient] Cannot send message: offline')
+      return false
     }
 
     const messagesMap = this.doc.getMap<Y.Array<ChatMessage>>('messages')
@@ -369,6 +414,48 @@ export class ChatClient {
 
     console.log('[ChatClient] Sending message:', message)
     channelMessages.push([message])
+    return true
+  }
+
+  /**
+   * Clear all local chat history from IndexedDB
+   * This removes all channels and messages from local storage
+   */
+  async clearHistory(): Promise<void> {
+    console.log('[ChatClient] Clearing local chat history...')
+    
+    if (this.persistence) {
+      await this.persistence.clearData()
+      console.log('[ChatClient] IndexedDB cleared')
+    }
+
+    // Clear the Y.Doc in memory
+    if (this.doc) {
+      this.doc.transact(() => {
+        const channelsMap = this.doc!.getMap<ChatChannel>('channels')
+        const messagesMap = this.doc!.getMap<Y.Array<ChatMessage>>('messages')
+        
+        // Clear all channels and messages
+        channelsMap.clear()
+        messagesMap.clear()
+        
+        // Recreate default general channel
+        const generalChannel: ChatChannel = {
+          id: 'general',
+          name: 'general',
+          createdAt: Date.now(),
+          createdBy: this.state.selfId || 'system',
+        }
+        channelsMap.set('general', generalChannel)
+        messagesMap.set('general', new Y.Array<ChatMessage>())
+      })
+      
+      // Re-sync state
+      this.syncChannelsFromYjs()
+      this.setCurrentChannel('general')
+    }
+
+    console.log('[ChatClient] History cleared')
   }
 
   private syncChannelsFromYjs(): void {
