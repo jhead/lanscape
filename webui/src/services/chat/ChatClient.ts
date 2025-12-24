@@ -116,6 +116,22 @@ function buildSignalingUrl(networkName: string | null): string {
 }
 
 /**
+ * Build TURN server URL from network name
+ * Format: turn.<network name>.tsnet.jxh.io
+ */
+function buildTurnUrl(networkName: string | null): string | null {
+  // If no network name, don't use TURN server
+  if (!networkName) {
+    return null
+  }
+
+  // Build URL: turn.<network name>.tsnet.jxh.io
+  const url = `turn.${networkName}.tsnet.jxh.io`
+  console.log('[ChatClient] Built TURN server URL from network:', url)
+  return url
+}
+
+/**
  * ChatClient manages the chat connection and state outside of React.
  * This prevents React Strict Mode double-renders from causing duplicate connections.
  */
@@ -248,6 +264,7 @@ export class ChatClient {
       // Get current network and build signaling URL
       const network = await getCurrentNetwork()
       const signalingUrl = buildSignalingUrl(network?.name || null)
+      const turnUrl = buildTurnUrl(network?.name || null)
 
       // Normalize signaling URL
       let wsUrl = signalingUrl.trim()
@@ -263,6 +280,7 @@ export class ChatClient {
       const transport = new WebRTCTransport({
         signalingUrl: wsUrl,
         topic: DEFAULT_TOPIC,
+        turnUrl: turnUrl || undefined,
       })
       this.transport = transport
 

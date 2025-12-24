@@ -14,6 +14,7 @@ import type {
 export interface SignalingConfig {
   signalingUrl: string
   topic: string
+  turnUrl?: string  // Optional TURN server URL (e.g., turn.<network name>.tsnet.jxh.io)
 }
 
 export interface PeerConnection extends PeerConnectionInfo {
@@ -539,11 +540,20 @@ export class WebRTCSignalingClient {
       return this.peers.get(peerId)!
     }
 
+    // Build ICE servers configuration
+    const iceServers: RTCIceServer[] = []
+    if (this.config.turnUrl) {
+      iceServers.push({
+        urls: `turn:${this.config.turnUrl}:3478?transport=udp`,
+        username: "lanscape",
+        credential: "lanscape",
+      })
+      console.log('[WebRTC] Added TURN server to ICE configuration:', this.config.turnUrl)
+    }
+
     // Create RTCPeerConnection
     const pc = new RTCPeerConnection({
-      iceServers: [
-        // No servers, forcing peer-to-peer connection over Tailscale network
-      ],
+      iceServers,
     })
 
     const peerConn: PeerConnection = {
