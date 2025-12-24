@@ -42,6 +42,9 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
       setNetworks(fetchedNetworks)
       console.log('[NetworkContext] Fetched', fetchedNetworks.length, 'networks')
 
+      // Track if we set a network during validation
+      let networkSet = false
+
       // If we have a current network stored, verify it still exists
       const stored = localStorage.getItem(CURRENT_NETWORK_KEY)
       if (stored) {
@@ -58,11 +61,20 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
             if (updatedNetwork) {
               setCurrentNetworkState(updatedNetwork)
               localStorage.setItem(CURRENT_NETWORK_KEY, JSON.stringify(updatedNetwork))
+              networkSet = true
             }
           }
         } catch (error) {
           console.error('[NetworkContext] Error validating stored network:', error)
         }
+      }
+
+      // Auto-select first network if none is selected and networks exist
+      if (!networkSet && fetchedNetworks.length > 0) {
+        const firstNetwork = fetchedNetworks[0]
+        console.log('[NetworkContext] Auto-selecting first network:', firstNetwork.name)
+        setCurrentNetworkState(firstNetwork)
+        localStorage.setItem(CURRENT_NETWORK_KEY, JSON.stringify(firstNetwork))
       }
     } catch (error) {
       console.error('[NetworkContext] Error fetching networks:', error)

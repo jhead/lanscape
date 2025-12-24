@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { getChatClient, ChatChannel, ChatMessage, ChatMember, ChatClientState } from '../services/chat'
+import { useNetwork } from './NetworkContext'
 
 // Re-export types for convenience
 export type { ChatChannel, ChatMessage, ChatMember }
@@ -38,6 +39,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined)
 export function ChatProvider({ children }: { children: ReactNode }) {
   // Get the singleton client
   const client = getChatClient()
+  const { currentNetwork, loading: networkLoading } = useNetwork()
   
   // Track client state in React
   const [state, setState] = useState<ChatClientState>(client.getState())
@@ -49,9 +51,6 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       setState(newState)
     })
 
-    // Connect on mount (safe to call multiple times)
-    client.connect()
-
     return () => {
       console.log('[ChatContext] Unsubscribing from client')
       unsubscribe()
@@ -59,6 +58,16 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       // The client persists across React re-renders
     }
   }, [client])
+
+  // Connect when a network is available
+  useEffect(() => {
+    if (!networkLoading && currentNetwork) {
+      console.log('[ChatContext] Network available, connecting to chat')
+      client.connect()
+    } else if (!networkLoading && !currentNetwork) {
+      console.log('[ChatContext] No network available, not connecting')
+    }
+  }, [client, currentNetwork, networkLoading])
 
   const setCurrentChannel = useCallback((channelId: string | null) => {
     client.setCurrentChannel(channelId)
