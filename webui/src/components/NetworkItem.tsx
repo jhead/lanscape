@@ -1,15 +1,19 @@
 import { useState } from 'react'
 import { joinNetwork, deleteNetwork, adoptDevice } from '../utils/api'
+import { useNetwork } from '../contexts/NetworkContext'
 import { DeviceOnboardingModal } from './DeviceOnboardingModal'
 import type { Network } from '../types'
 
 interface NetworkItemProps {
   network: Network
+  isCurrent?: boolean
   onDelete: () => void
   onStatusChange: (message: string, type: 'info' | 'success' | 'error') => void
+  onSelected?: () => void
 }
 
-export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemProps) {
+export function NetworkItem({ network, isCurrent = false, onDelete, onStatusChange, onSelected }: NetworkItemProps) {
+  const { setCurrentNetwork } = useNetwork()
   const [loading, setLoading] = useState(false)
   const [showDeviceOnboarding, setShowDeviceOnboarding] = useState(false)
   const [preauthKey, setPreauthKey] = useState<string | null>(null)
@@ -19,6 +23,7 @@ export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemPr
       setLoading(true)
       onStatusChange('Connecting...', 'info')
       await joinNetwork(network.id)
+      setCurrentNetwork(network)
       onStatusChange('Connected', 'success')
     } catch (error) {
       onStatusChange(
@@ -28,6 +33,12 @@ export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemPr
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSelect = () => {
+    setCurrentNetwork(network)
+    onStatusChange('Network selected', 'success')
+    onSelected?.()
   }
 
   const handleDelete = async () => {
@@ -77,22 +88,44 @@ export function NetworkItem({ network, onDelete, onStatusChange }: NetworkItemPr
   }
 
   return (
-    <div className="network-item">
+    <div className={`network-item ${isCurrent ? 'network-item-current' : ''}`}>
       <div className="network-info">
-        <h3>{network.name}</h3>
+        <h3>
+          {network.name}
+          {isCurrent && <span className="network-current-badge">Current</span>}
+        </h3>
         <p className="network-endpoint">{network.headscale_endpoint}</p>
         <p className="network-date">
           {new Date(network.created_at).toLocaleDateString()}
         </p>
       </div>
       <div className="network-actions">
-        <button
-          className="join-btn"
-          onClick={handleJoin}
-          disabled={loading}
-        >
-          Join Network
-        </button>
+        {isCurrent ? (
+          <button
+            className="select-btn"
+            disabled
+            style={{ opacity: 0.6, cursor: 'not-allowed' }}
+          >
+            Current Network
+          </button>
+        ) : (
+          <>
+            <button
+              className="select-btn"
+              onClick={handleSelect}
+              disabled={loading}
+            >
+              Select
+            </button>
+            <button
+              className="join-btn"
+              onClick={handleJoin}
+              disabled={loading}
+            >
+              Join Network
+            </button>
+          </>
+        )}
         <button
           className="add-device-btn"
           onClick={handleAddDevice}

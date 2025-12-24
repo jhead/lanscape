@@ -288,6 +288,16 @@ button:disabled {
   border-color: #52525b;
 }
 
+.network-item-current {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+}
+
+.network-item-current:hover {
+  background: #1e3a5f;
+  border-color: #3b82f6;
+}
+
 .network-info {
   flex: 1;
   text-align: left;
@@ -298,6 +308,20 @@ button:disabled {
   font-size: 1rem;
   color: #ffffff;
   font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.network-current-badge {
+  font-size: 0.6875rem;
+  padding: 0.125rem 0.5rem;
+  background: #3b82f6;
+  color: #ffffff;
+  border-radius: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .network-endpoint {
@@ -360,6 +384,18 @@ button:disabled {
   background: #3f3f46 !important;
   border-color: #52525b !important;
   color: #f87171 !important;
+}
+
+.select-btn {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+.select-btn:hover:not(:disabled) {
+  background: #2563eb !important;
+  border-color: #2563eb !important;
+  color: #ffffff !important;
 }
 
 .empty-state {

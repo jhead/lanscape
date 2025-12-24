@@ -24,138 +24,107 @@ function seededRandom(seed: number): () => number {
   }
 }
 
-// Lava lamp themes: background + blob edge + blob center
-const THEMES = [
-  { bg: '#2a2438', edge: '#e8b4bc', center: '#c47a84' }, // Dusty rose on purple
-  { bg: '#1e2a2a', edge: '#88c4c4', center: '#5a9898' }, // Teal on dark teal
-  { bg: '#2a2420', edge: '#d4a574', center: '#a67c4c' }, // Amber on brown
-  { bg: '#1a2430', edge: '#a4b4d4', center: '#6880a8' }, // Periwinkle on navy
-  { bg: '#282428', edge: '#c4a4c8', center: '#906898' }, // Lavender on plum
-  { bg: '#242a24', edge: '#a4c8a4', center: '#689868' }, // Sage on forest
-  { bg: '#2a2828', edge: '#c8b8a8', center: '#988878' }, // Taupe on charcoal
-  { bg: '#201a28', edge: '#b898c8', center: '#8060a0' }, // Orchid on grape
-]
+const GRID_SIZE = 6 // 6x6 grid, mirrored to look like 6x6
 
 interface AvatarParams {
-  theme: typeof THEMES[0]
-  seed: number
-  speed: number
-  numBlobs: number
+  fgColor: string
+  bgColor: string
+  pixels: boolean[] // Which pixels are "on" (only left half + center, will be mirrored)
+}
+
+// Convert HSL to RGB
+function hslToRgb(h: number, s: number, l: number): [number, number, number] {
+  h = h / 360
+  let r: number, g: number, b: number
+
+  if (s === 0) {
+    r = g = b = l
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1
+      if (t > 1) t -= 1
+      if (t < 1/6) return p + (q - p) * 6 * t
+      if (t < 1/2) return q
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6
+      return p
+    }
+
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+    const p = 2 * l - q
+    r = hue2rgb(p, q, h + 1/3)
+    g = hue2rgb(p, q, h)
+    b = hue2rgb(p, q, h - 1/3)
+  }
+
+  return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)]
+}
+
+// Convert RGB to hex
+function rgbToHex(r: number, g: number, b: number): string {
+  return `#${[r, g, b].map(x => {
+    const hex = x.toString(16)
+    return hex.length === 1 ? '0' + hex : hex
+  }).join('')}`
 }
 
 function generateParams(userId: string): AvatarParams {
   const hash = hashString(userId)
   const rng = seededRandom(hash)
   
-  return {
-    theme: THEMES[Math.floor(rng() * THEMES.length)],
-    seed: rng() * 100,
-    speed: 0.15 + rng() * 0.1,
-    numBlobs: 6 + Math.floor(rng() * 4), // 6-9 blobs
+  // Generate base hue (0-360) - full range for variety
+  const baseHue = rng() * 360
+  
+  // Choose color relationship (complementary or analogous)
+  const useComplementary = rng() > 0.5
+  const fgHue = baseHue
+  const bgHue = useComplementary 
+    ? (baseHue + 180) % 360 // Complementary (opposite)
+    : (baseHue + (rng() > 0.5 ? 30 : -30) + 360) % 360 // Analogous (±30°)
+  
+  // Foreground: moderate saturation (40-60%), medium-light (50-65%)
+  // These ranges ensure pleasant, not jarring colors
+  const fgSaturation = 0.40 + rng() * 0.20 // 40-60%
+  const fgLightness = 0.50 + rng() * 0.15 // 50-65%
+  
+  // Background: slightly lower saturation (35-55%), dark (18-25%)
+  // Dark enough for contrast but not pure black
+  const bgSaturation = 0.35 + rng() * 0.20 // 35-55%
+  const bgLightness = 0.18 + rng() * 0.07 // 18-25%
+  
+  // Convert to RGB and hex
+  const [fgR, fgG, fgB] = hslToRgb(fgHue, fgSaturation, fgLightness)
+  const [bgR, bgG, bgB] = hslToRgb(bgHue, bgSaturation, bgLightness)
+  
+  const fgColor = rgbToHex(fgR, fgG, fgB)
+  const bgColor = rgbToHex(bgR, bgG, bgB)
+  
+  // Generate pixels for left half + center column (will mirror for right half)
+  // For 6x6: we need 3 columns (left) + mirror = 6 columns
+  const halfWidth = Math.ceil(GRID_SIZE / 2)
+  const pixels: boolean[] = []
+  
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < halfWidth; x++) {
+      // Higher chance of pixels in center, lower at edges
+      const distFromCenter = Math.abs(x - halfWidth + 0.5) / halfWidth
+      const chance = 0.5 - distFromCenter * 0.2
+      pixels.push(rng() < chance)
+    }
   }
+  
+  return { fgColor, bgColor, pixels }
 }
 
-const vertexShader = `
-  attribute vec2 a_position;
-  varying vec2 v_uv;
-  void main() {
-    v_uv = a_position * 0.5 + 0.5;
-    gl_Position = vec4(a_position, 0.0, 1.0);
-  }
-`
-
-const fragmentShader = `
-  precision highp float;
-  
-  varying vec2 v_uv;
-  uniform float u_time;
-  uniform float u_seed;
-  uniform vec3 u_bgColor;
-  uniform vec3 u_edgeColor;
-  uniform vec3 u_centerColor;
-  uniform int u_numBlobs;
-  
-  // Deterministic random based on index
-  float rand(int i) {
-    return sin(float(i) * 1.64 + u_seed * 0.1) * 0.5 + 0.5;
-  }
-  
-  // Get blob position and size at time t
-  vec3 getBlob(int i, float time) {
-    float spd = 0.25;
-    float moveRange = 0.35;
-    
-    // Base position offset from center
-    vec2 center = vec2(0.5) + 0.15 * vec2(rand(i) - 0.5, rand(i + 42) - 0.5);
-    
-    // Animated movement
-    float t1 = time * spd * (0.5 + rand(i + 2));
-    float t2 = time * spd * (0.4 + rand(i + 7));
-    center.x += sin(t1) * moveRange * (rand(i + 56) - 0.3);
-    center.y += cos(t2) * moveRange * (rand(i * 9) - 0.3);
-    
-    // Blob radius
-    float radius = 0.06 + 0.06 * rand(i + 3);
-    
-    return vec3(center, radius);
-  }
-  
-  void main() {
-    vec2 uv = v_uv;
-    
-    // Map to circle (centered at 0.5, 0.5)
-    vec2 centered = uv - 0.5;
-    float distFromCenter = length(centered);
-    
-    // Discard outside circle
-    if (distFromCenter > 0.5) discard;
-    
-    // Calculate metaball field
-    float distSum = 0.0;
-    
-    for (int i = 0; i < 12; i++) {
-      if (i >= u_numBlobs) break;
-      
-      vec3 blob = getBlob(i, u_time);
-      vec2 blobCenter = blob.xy;
-      float radius = blob.z;
-      
-      float d = length(blobCenter - uv) + radius * 0.3;
-      d = max(d, 0.001);
-      
-      // Sharp falloff: 1/d^4
-      float tmp = d * d;
-      distSum += 1.0 / (tmp * tmp);
-    }
-    
-    // Threshold for blob edge
-    float thresh = 8000.0;
-    
-    // Background by default
-    vec3 color = u_bgColor;
-    float alpha = 1.0;
-    
-    if (distSum > thresh) {
-      // Inside a blob - gradient from edge to center
-      float t = smoothstep(thresh, thresh * 4.0, distSum);
-      color = mix(u_edgeColor, u_centerColor, t);
-    }
-    
-    // Soft edge on outer circle
-    alpha = 1.0 - smoothstep(0.47, 0.5, distFromCenter);
-    
-    gl_FragColor = vec4(color, alpha);
-  }
-`
-
-function hexToRgb(hex: string): [number, number, number] {
-  const r = parseInt(hex.slice(1, 3), 16) / 255
-  const g = parseInt(hex.slice(3, 5), 16) / 255
-  const b = parseInt(hex.slice(5, 7), 16) / 255
-  return [r, g, b]
+// Get pixel state with horizontal mirroring
+function getPixel(pixels: boolean[], x: number, y: number, gridSize: number): boolean {
+  const halfWidth = Math.ceil(gridSize / 2)
+  // Mirror x coordinate
+  const mirroredX = x < halfWidth ? x : gridSize - 1 - x
+  const idx = y * halfWidth + mirroredX
+  return pixels[idx] || false
 }
 
-export function WebGLAvatar({ userId, size = 40, className = '' }: WebGLAvatarProps) {
+export function Avatar({ userId, size = 40, className = '' }: WebGLAvatarProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const params = useMemo(() => generateParams(userId), [userId])
   
@@ -167,76 +136,40 @@ export function WebGLAvatar({ userId, size = 40, className = '' }: WebGLAvatarPr
     canvas.width = size * dpr
     canvas.height = size * dpr
     
-    const gl = canvas.getContext('webgl', { alpha: true, antialias: true, premultipliedAlpha: false })
-    if (!gl) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
     
-    const vs = gl.createShader(gl.VERTEX_SHADER)!
-    gl.shaderSource(vs, vertexShader)
-    gl.compileShader(vs)
+    // Disable smoothing for crisp pixels
+    ctx.imageSmoothingEnabled = false
     
-    const fs = gl.createShader(gl.FRAGMENT_SHADER)!
-    gl.shaderSource(fs, fragmentShader)
-    gl.compileShader(fs)
+    const cellSize = (size * dpr) / GRID_SIZE
     
-    if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
-      console.error('[Avatar] Fragment shader error:', gl.getShaderInfoLog(fs))
-      return
+    // Fill background
+    ctx.fillStyle = params.bgColor
+    ctx.fillRect(0, 0, size * dpr, size * dpr)
+    
+    // Draw pixels
+    ctx.fillStyle = params.fgColor
+    for (let y = 0; y < GRID_SIZE; y++) {
+      for (let x = 0; x < GRID_SIZE; x++) {
+        if (getPixel(params.pixels, x, y, GRID_SIZE)) {
+          ctx.fillRect(
+            Math.floor(x * cellSize),
+            Math.floor(y * cellSize),
+            Math.ceil(cellSize),
+            Math.ceil(cellSize)
+          )
+        }
+      }
     }
     
-    const program = gl.createProgram()!
-    gl.attachShader(program, vs)
-    gl.attachShader(program, fs)
-    gl.linkProgram(program)
-    gl.useProgram(program)
+    // Apply circular mask
+    ctx.globalCompositeOperation = 'destination-in'
+    ctx.beginPath()
+    ctx.arc(size * dpr / 2, size * dpr / 2, size * dpr / 2, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.globalCompositeOperation = 'source-over'
     
-    const buf = gl.createBuffer()
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf)
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW)
-    
-    const pos = gl.getAttribLocation(program, 'a_position')
-    gl.enableVertexAttribArray(pos)
-    gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0)
-    
-    const uTime = gl.getUniformLocation(program, 'u_time')
-    const uSeed = gl.getUniformLocation(program, 'u_seed')
-    const uBg = gl.getUniformLocation(program, 'u_bgColor')
-    const uEdge = gl.getUniformLocation(program, 'u_edgeColor')
-    const uCenter = gl.getUniformLocation(program, 'u_centerColor')
-    const uNum = gl.getUniformLocation(program, 'u_numBlobs')
-    
-    gl.uniform1f(uSeed, params.seed)
-    gl.uniform3fv(uBg, hexToRgb(params.theme.bg))
-    gl.uniform3fv(uEdge, hexToRgb(params.theme.edge))
-    gl.uniform3fv(uCenter, hexToRgb(params.theme.center))
-    gl.uniform1i(uNum, params.numBlobs)
-    
-    gl.enable(gl.BLEND)
-    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-    
-    let frame: number
-    const start = performance.now()
-    
-    const render = () => {
-      const t = (performance.now() - start) / 1000 * params.speed
-      gl.uniform1f(uTime, t)
-      
-      gl.viewport(0, 0, canvas.width, canvas.height)
-      gl.clearColor(0, 0, 0, 0)
-      gl.clear(gl.COLOR_BUFFER_BIT)
-      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-      
-      frame = requestAnimationFrame(render)
-    }
-    
-    render()
-    
-    return () => {
-      cancelAnimationFrame(frame)
-      gl.deleteProgram(program)
-      gl.deleteShader(vs)
-      gl.deleteShader(fs)
-      gl.deleteBuffer(buf)
-    }
   }, [userId, size, params])
   
   return (
@@ -247,46 +180,6 @@ export function WebGLAvatar({ userId, size = 40, className = '' }: WebGLAvatarPr
       aria-label={`Avatar for ${userId}`}
     />
   )
-}
-
-export function AvatarFallback({ userId, size = 40, className = '' }: WebGLAvatarProps) {
-  const params = useMemo(() => generateParams(userId), [userId])
-  
-  return (
-    <div
-      className={`avatar-fallback ${className}`}
-      style={{
-        width: size,
-        height: size,
-        background: params.theme.bg,
-        borderRadius: '50%',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-      aria-label={`Avatar for ${userId}`}
-    >
-      <div style={{
-        position: 'absolute',
-        width: '40%',
-        height: '40%',
-        background: `radial-gradient(circle, ${params.theme.center}, ${params.theme.edge})`,
-        borderRadius: '50%',
-        top: '30%',
-        left: '30%',
-      }} />
-    </div>
-  )
-}
-
-export function Avatar(props: WebGLAvatarProps) {
-  const hasWebGL = useMemo(() => {
-    try {
-      const c = document.createElement('canvas')
-      return !!(c.getContext('webgl') || c.getContext('experimental-webgl'))
-    } catch { return false }
-  }, [])
-  
-  return hasWebGL ? <WebGLAvatar {...props} /> : <AvatarFallback {...props} />
 }
 
 export default Avatar

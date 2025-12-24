@@ -1,13 +1,18 @@
 import { useState } from 'react'
+import { Settings } from 'lucide-react'
 import { useChat } from '../../contexts/ChatContext'
+import { useNetwork } from '../../contexts/NetworkContext'
 import { ChannelList } from './ChannelList'
 import { MemberList } from './MemberList'
 import { SettingsModal } from './SettingsModal'
+import { NetworkManagerModal } from '../NetworkManagerModal'
 import './Sidebar.css'
 
 export function Sidebar() {
   const { displayName, selfId, isOnline } = useChat()
+  const { currentNetwork } = useNetwork()
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [networkManagerOpen, setNetworkManagerOpen] = useState(false)
 
   return (
     <div className="chat-sidebar">
@@ -18,10 +23,19 @@ export function Sidebar() {
           onClick={() => setSettingsOpen(true)}
           title="Settings"
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M9 11.25a2.25 2.25 0 100-4.5 2.25 2.25 0 000 4.5z" stroke="currentColor" strokeWidth="1.5"/>
-            <path d="M14.69 7.09l.66-.38a1 1 0 00.37-1.36l-.75-1.3a1 1 0 00-1.37-.37l-.66.38a5.96 5.96 0 00-1.31-.76v-.76a1 1 0 00-1-1h-1.5a1 1 0 00-1 1v.76a5.96 5.96 0 00-1.31.76l-.66-.38a1 1 0 00-1.37.37l-.75 1.3a1 1 0 00.37 1.36l.66.38a5.97 5.97 0 000 1.52l-.66.38a1 1 0 00-.37 1.36l.75 1.3a1 1 0 001.37.37l.66-.38c.4.3.84.56 1.31.76v.76a1 1 0 001 1h1.5a1 1 0 001-1v-.76c.47-.2.91-.46 1.31-.76l.66.38a1 1 0 001.37-.37l.75-1.3a1 1 0 00-.37-1.36l-.66-.38a5.97 5.97 0 000-1.52z" stroke="currentColor" strokeWidth="1.5"/>
-          </svg>
+          <Settings size={18} />
+        </button>
+      </div>
+      <div className="sidebar-network-section">
+        <span className="sidebar-network-name" title={currentNetwork?.name || 'No network selected'}>
+          {currentNetwork?.name || 'No network'}
+        </span>
+        <button
+          className="sidebar-network-change-btn"
+          onClick={() => setNetworkManagerOpen(true)}
+          title="Change network"
+        >
+          switch net
         </button>
       </div>
       <div className="sidebar-content">
@@ -41,6 +55,7 @@ export function Sidebar() {
       </div>
       
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <NetworkManagerModal isOpen={networkManagerOpen} onClose={() => setNetworkManagerOpen(false)} />
     </div>
   )
 }

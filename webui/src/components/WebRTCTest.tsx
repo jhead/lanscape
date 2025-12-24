@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef } from 'react'
-import { Link } from 'react-router-dom'
 import { WebRTCSignalingClient, SignalingConfig } from '../services/webrtc/signaling'
 import type { PeerConnection } from '../services/webrtc/signaling'
 import './WebRTCTest.css'
@@ -136,17 +135,6 @@ export function WebRTCTest() {
     <div className="webrtc-test">
       <div className="webrtc-test-header">
         <h1>LANSCAPE</h1>
-        <nav className="webrtc-test-nav">
-          <Link to="/chat" className="nav-link">
-            Chat
-          </Link>
-          <Link to="/networks" className="nav-link">
-            Networks
-          </Link>
-          <Link to="/webrtc-test" className="nav-link active">
-            WebRTC Test
-          </Link>
-        </nav>
       </div>
 
       <div className="webrtc-test-content">

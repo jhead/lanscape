@@ -20,6 +20,8 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: #71717a;
+  flex: 1;
+  min-width: 0;
 }
 
 .channel-list-add-btn {
@@ -28,15 +30,17 @@
   color: #71717a;
   cursor: pointer;
   font-size: 1.25rem;
-  width: 20px;
+  width: auto;
+  min-width: 20px;
   height: 20px;
+  padding: 0 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
   transition: all 0.2s;
   line-height: 1;
-  padding: 0;
+  flex-shrink: 0;
 }
 
 .channel-list-add-btn:hover {
@@ -70,8 +74,8 @@
   align-items: center;
   gap: 0.25rem;
   font-size: 0.9375rem;
-  transition: all 0.15s;
   border-radius: 0;
+  box-shadow: none;
 }
 
 .channel-list-item:hover {
@@ -82,6 +86,14 @@
 .channel-list-item.active {
   background: #3f3f46;
   color: #ffffff;
+  border-left: 2px solid #50fa7b;
+  padding-left: calc(1rem - 2px);
+}
+
+.channel-list-item.active:hover {
+  background: #3f3f46;
+  color: #ffffff;
+  border-left: 2px solid #50fa7b;
 }
 
 .channel-hash {
@@ -92,7 +104,11 @@
 }
 
 .channel-list-item.active .channel-hash {
-  color: #a1a1aa;
+  color: #50fa7b;
+}
+
+.channel-list-item.active:hover .channel-hash {
+  color: #50fa7b;
 }
 
 .channel-name {

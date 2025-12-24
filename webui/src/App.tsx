@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './contexts/AuthContext'
+import { NetworkProvider } from './contexts/NetworkContext'
 import { AuthForm } from './components/AuthForm'
 import { Dashboard } from './components/Dashboard'
 import { NetworkManager } from './components/NetworkManager'
@@ -11,12 +12,14 @@ function App() {
   return (
     <>
       {isAuthenticated ? (
-        <Routes>
-          <Route path="/chat" element={<Dashboard />} />
-          <Route path="/networks" element={<NetworkManager />} />
-          <Route path="/webrtc-test" element={<WebRTCTest />} />
-          <Route path="/" element={<Navigate to="/chat" replace />} />
-        </Routes>
+        <NetworkProvider>
+          <Routes>
+            <Route path="/chat" element={<Dashboard />} />
+            <Route path="/networks" element={<NetworkManager />} />
+            <Route path="/webrtc-test" element={<WebRTCTest />} />
+            <Route path="/" element={<Navigate to="/chat" replace />} />
+          </Routes>
+        </NetworkProvider>
       ) : (
         <div className="container">
           <h1>Lanscape</h1>

@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
-import { fetchNetworks } from '../utils/api'
+import { useNetwork } from '../contexts/NetworkContext'
 import { NetworkItem } from './NetworkItem'
 import { CreateNetworkModal } from './CreateNetworkModal'
 import { StatusMessage } from './StatusMessage'
-import type { Network } from '../types'
 import type { StatusType } from '../types'
 
-export function NetworkList() {
-  const [networks, setNetworks] = useState<Network[]>([])
-  const [loading, setLoading] = useState(true)
+interface NetworkListProps {
+  onNetworkSelected?: () => void
+}
+
+export function NetworkList({ onNetworkSelected }: NetworkListProps) {
+  const { networks, loading, refreshNetworks, currentNetwork } = useNetwork()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [status, setStatus] = useState<{ type: StatusType; message: string | null }>({
     type: null,
@@ -16,20 +18,12 @@ export function NetworkList() {
   })
 
   const loadNetworks = async () => {
-    try {
-      setLoading(true)
-      const fetchedNetworks = await fetchNetworks()
-      setNetworks(fetchedNetworks)
-    } catch (error) {
-      console.error('Error fetching networks:', error)
-      setNetworks([])
-    } finally {
-      setLoading(false)
-    }
+    await refreshNetworks()
   }
 
   useEffect(() => {
     loadNetworks()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleStatusChange = (message: string, type: 'info' | 'success' | 'error') => {
@@ -66,8 +60,10 @@ export function NetworkList() {
               <NetworkItem
                 key={network.id}
                 network={network}
+                isCurrent={currentNetwork?.id === network.id}
                 onDelete={loadNetworks}
                 onStatusChange={handleStatusChange}
+                onSelected={onNetworkSelected}
               />
             ))
           )}

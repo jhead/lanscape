@@ -1,0 +1,90 @@
+.network-manager-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 2rem;
+}
+
+.network-manager-modal {
+  background: #18181b;
+  border-radius: 8px;
+  border: 1px solid #27272a;
+  width: 100%;
+  max-width: 800px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+}
+
+.network-manager-modal-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #27272a;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.network-manager-modal-header h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0;
+}
+
+.network-manager-modal-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #71717a;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  line-height: 1;
+  transition: all 0.15s;
+}
+
+.network-manager-modal-close:hover {
+  background: #27272a;
+  color: #e4e4e7;
+}
+
+.network-manager-modal-close:active {
+  transform: scale(0.95);
+}
+
+.network-manager-modal-content {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.network-manager-modal-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.network-manager-modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.network-manager-modal-content::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 4px;
+}
+
+.network-manager-modal-content::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
