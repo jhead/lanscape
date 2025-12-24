@@ -1,0 +1,66 @@
+.webgl-avatar {
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: block;
+  /* Subtle shadow for depth */
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+  /* Smooth edges */
+  image-rendering: optimizeQuality;
+  /* Prevent selection */
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.avatar-fallback {
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  box-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Size variants for different contexts */
+.webgl-avatar.avatar-xs,
+.avatar-fallback.avatar-xs {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+.webgl-avatar.avatar-sm,
+.avatar-fallback.avatar-sm {
+  width: 32px !important;
+  height: 32px !important;
+}
+
+.webgl-avatar.avatar-md,
+.avatar-fallback.avatar-md {
+  width: 40px !important;
+  height: 40px !important;
+}
+
+.webgl-avatar.avatar-lg,
+.avatar-fallback.avatar-lg {
+  width: 56px !important;
+  height: 56px !important;
+}
+
+.webgl-avatar.avatar-xl,
+.avatar-fallback.avatar-xl {
+  width: 80px !important;
+  height: 80px !important;
+}
+
+/* Inline variant for member list (no hover effect) */
+.webgl-avatar.avatar-inline,
+.avatar-fallback.avatar-inline {
+  box-shadow: none;
+}
+
+.webgl-avatar.avatar-inline:hover,
+.avatar-fallback.avatar-inline:hover {
+  transform: none;
+}
+
