@@ -2,11 +2,15 @@ import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { WebRTCTransport } from '../transport'
 import { YjsSync, AwarenessState } from '../sync'
-import { getCurrentUser } from '../../utils/api'
+import { getCurrentUser, fetchNetworks } from '../../utils/api'
+import type { Network } from '../../types'
 
 // Default signaling URL from environment or fallback
 const DEFAULT_SIGNALING_URL = import.meta.env.VITE_SIGNALING_URL || 'ws://localhost:8081'
 const DEFAULT_TOPIC = import.meta.env.VITE_CHAT_TOPIC || 'lanscape-chat'
+
+// localStorage key for current network (matches NetworkContext)
+const CURRENT_NETWORK_KEY = 'lanscape_current_network'
 
 // IndexedDB document name prefix - namespaced per user
 const IDB_DOC_PREFIX = 'lanscape-chat'
@@ -53,6 +57,63 @@ export type ChatClientListener = (state: ChatClientState) => void
 // Generate a simple unique ID
 function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`
+}
+
+/**
+ * Get the current network from localStorage, or fetch and use the first network if none is selected
+ */
+async function getCurrentNetwork(): Promise<Network | null> {
+  // Try to get from localStorage first
+  const stored = localStorage.getItem(CURRENT_NETWORK_KEY)
+  if (stored) {
+    try {
+      const network = JSON.parse(stored) as Network
+      console.log('[ChatClient] Using stored network:', network.name)
+      return network
+    } catch (error) {
+      console.error('[ChatClient] Failed to parse stored network:', error)
+      localStorage.removeItem(CURRENT_NETWORK_KEY)
+    }
+  }
+
+  // If no network is stored, fetch networks and use the first one
+  try {
+    const networks = await fetchNetworks()
+    if (networks.length > 0) {
+      const firstNetwork = networks[0]
+      console.log('[ChatClient] No network selected, using first network:', firstNetwork.name)
+      // Store it for future use
+      localStorage.setItem(CURRENT_NETWORK_KEY, JSON.stringify(firstNetwork))
+      return firstNetwork
+    }
+  } catch (error) {
+    console.error('[ChatClient] Failed to fetch networks:', error)
+  }
+
+  return null
+}
+
+/**
+ * Build signaling URL from network name
+ * Format: wss://signaling.<network name>.tsnet.jxh.io
+ */
+function buildSignalingUrl(networkName: string | null): string {
+  // If environment variable is set, use it (allows override)
+  if (import.meta.env.VITE_SIGNALING_URL) {
+    return import.meta.env.VITE_SIGNALING_URL
+  }
+
+  // If no network name, fall back to default
+  if (!networkName) {
+    console.warn('[ChatClient] No network name, using default signaling URL')
+    return DEFAULT_SIGNALING_URL
+  }
+
+  // Build URL: wss://signaling.<network name>.tsnet.jxh.io
+  // Use wss:// for secure WebSocket (Tailscale domains are typically secure)
+  const url = `ws://signaling.${networkName}.tsnet.jxh.io:8081`
+  console.log('[ChatClient] Built signaling URL from network:', url)
+  return url
 }
 
 /**
@@ -185,8 +246,12 @@ export class ChatClient {
         this.syncMessagesFromYjs()
       })
 
+      // Get current network and build signaling URL
+      const network = await getCurrentNetwork()
+      const signalingUrl = buildSignalingUrl(network?.name || null)
+
       // Normalize signaling URL
-      let wsUrl = DEFAULT_SIGNALING_URL.trim()
+      let wsUrl = signalingUrl.trim()
       if (wsUrl.startsWith('http://')) {
         wsUrl = wsUrl.replace('http://', 'ws://')
       } else if (wsUrl.startsWith('https://')) {

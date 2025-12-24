@@ -31,7 +31,7 @@ services:
     hostname: signaling
     environment:
       - TS_AUTHKEY=${TS_AUTHKEY}
-      - TS_EXTRA_ARGS=--reset --force-reauth --login-server https://ts.jxh.io
+      - TS_EXTRA_ARGS=--login-server https://ts.jxh.io
       - TS_STATE_DIR=/var/lib/tailscale
       - TS_USERSPACE=false
     cap_add:
@@ -41,7 +41,6 @@ services:
     volumes:
       - tailscale-data:/var/lib/tailscale
     restart: unless-stopped
-    command: tailscaled
 
   signaling:
     image: ghcr.io/${GITHUB_REPOSITORY:-jhead/lanscape}/signaling:latest
