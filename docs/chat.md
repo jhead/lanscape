@@ -1,6 +1,6 @@
 # Chat System
 
-Peer-to-peer chat using WebRTC data channels and Y.js CRDTs for state synchronization, with IndexedDB persistence for offline access.
+Peer-to-peer chat using Y.js CRDTs for state synchronization, with IndexedDB persistence for offline access. Transport layer is currently stubbed pending implementation.
 
 ## Architecture
 
@@ -13,8 +13,7 @@ graph TB
         SYNC_A[YjsSync]
         YDOC_A[Y.Doc]
         IDB_A[IndexedDB Persistence]
-        TRANSPORT_A[WebRTCTransport]
-        SIG_A[Signaling Client]
+        TRANSPORT_A[StubTransport]
     end
 
     subgraph "Browser B"
@@ -24,26 +23,16 @@ graph TB
         SYNC_B[YjsSync]
         YDOC_B[Y.Doc]
         IDB_B[IndexedDB Persistence]
-        TRANSPORT_B[WebRTCTransport]
-        SIG_B[Signaling Client]
-    end
-
-    subgraph "Infrastructure"
-        SIG_SERVER[Signaling Server]
+        TRANSPORT_B[StubTransport]
     end
 
     UI_A --> CTX_A --> CLIENT_A --> SYNC_A --> YDOC_A
     YDOC_A <--> IDB_A
-    SYNC_A --> TRANSPORT_A --> SIG_A
+    SYNC_A --> TRANSPORT_A
     
     UI_B --> CTX_B --> CLIENT_B --> SYNC_B --> YDOC_B
     YDOC_B <--> IDB_B
-    SYNC_B --> TRANSPORT_B --> SIG_B
-
-    SIG_A <-->|WebSocket| SIG_SERVER
-    SIG_B <-->|WebSocket| SIG_SERVER
-    
-    TRANSPORT_A <-->|WebRTC Data Channel| TRANSPORT_B
+    SYNC_B --> TRANSPORT_B
 ```
 
 ## Components
@@ -53,8 +42,7 @@ graph TB
 | ChatClient | `services/chat/ChatClient.ts` | Singleton managing connection lifecycle, Y.js doc, persistence, and state |
 | YjsSync | `services/sync/YjsSync.ts` | Syncs Y.Doc across peers via transport; handles awareness |
 | IndexeddbPersistence | `y-indexeddb` (external) | Persists Y.Doc to browser IndexedDB for offline access |
-| WebRTCTransport | `services/transport/WebRTCTransport.ts` | Implements PeerTransport using WebRTC data channels |
-| Signaling Client | `services/webrtc/Signaling.ts` | WebSocket connection to signaling server for peer discovery and SDP/ICE exchange |
+| StubTransport | `services/transport/StubTransport.ts` | Stub implementation of PeerTransport (pending actual implementation) |
 | ChatContext | `contexts/ChatContext.tsx` | React context that subscribes to ChatClient state |
 | SettingsModal | `components/chat/SettingsModal.tsx` | Settings UI with Dev Tools tab for clearing history |
 
@@ -83,7 +71,7 @@ Chat history is persisted locally using [y-indexeddb](https://github.com/yjs/y-i
 
 ## Sync Protocol
 
-Messages sent over WebRTC data channels:
+Messages sent over transport layer (currently stubbed):
 
 | Type | ID | Description |
 |------|-----|-------------|
@@ -105,7 +93,7 @@ User presence is tracked via a lightweight awareness protocol:
 
 The chat system tracks connectivity status:
 
-- **isOnline**: True when connected to signaling server and/or has active peer connections
+- **isOnline**: Currently always false (transport is stubbed)
 - **Offline indicator**: Shown in sidebar footer and message input when disconnected
 - **Send restriction**: Messages cannot be sent while offline (prevents local-only messages that may never sync)
 
@@ -115,18 +103,14 @@ The chat system tracks connectivity status:
 2. ChatClient auto-connects on Dashboard mount
 3. Fetches username and user ID from `/v1/me` endpoint
 4. Creates Y.Doc and attaches IndexedDB persistence (loads local history)
-5. Connects to signaling server WebSocket at `/ws/{topic}`
-6. Signaling server assigns peer ID and broadcasts peer list
-7. WebRTC peer connections established with existing peers
-8. Data channels open → Y.js sync begins
-9. Default "general" channel created if none exist
+5. Creates stub transport (actual implementation pending)
+6. Default "general" channel created if none exist
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `VITE_SIGNALING_URL` | `ws://localhost:8081` | Signaling server WebSocket URL |
-| `VITE_CHAT_TOPIC` | `lanscape-chat` | Topic/room name for peer discovery |
+| `VITE_CHAT_TOPIC` | `lanscape-chat` | Topic/room name (currently unused, reserved for future use) |
 
 ## Settings Modal
 
@@ -142,7 +126,7 @@ Accessed via the gear icon in the sidebar header:
 ## Design Decisions
 
 - **Singleton ChatClient**: Prevents React Strict Mode double-renders from creating duplicate connections
-- **Transport abstraction**: `PeerTransport` interface allows swapping WebRTC for other transports
+- **Transport abstraction**: `PeerTransport` interface allows swapping transport implementations
 - **Y.js for state**: CRDTs enable conflict-free merging without central coordination
 - **Awareness vs CRDT**: Presence uses ephemeral awareness protocol, not persisted in Y.Doc
 - **Per-user persistence**: Each user has their own IndexedDB database, ensuring data isolation after logout/login

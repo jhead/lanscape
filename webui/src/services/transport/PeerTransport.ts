@@ -1,6 +1,6 @@
 /**
  * Abstract transport layer for peer-to-peer communication.
- * Implementations can use WebRTC data channels, WebSockets, or other transports.
+ * Implementations can use WebSockets, data channels, or other transports.
  */
 
 export type PeerTransportEventType =

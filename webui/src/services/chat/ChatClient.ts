@@ -1,16 +1,10 @@
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
-import { WebRTCTransport } from '../transport'
+import { StubTransport } from '../transport'
 import { YjsSync, AwarenessState } from '../sync'
-import { getCurrentUser, fetchNetworks } from '../../utils/api'
-import type { Network } from '../../types'
+import { getCurrentUser } from '../../utils/api'
 
-// Default signaling URL from environment or fallback
-const DEFAULT_SIGNALING_URL = import.meta.env.VITE_SIGNALING_URL || 'ws://localhost:8081'
 const DEFAULT_TOPIC = import.meta.env.VITE_CHAT_TOPIC || 'lanscape-chat'
-
-// localStorage key for current network (matches NetworkContext)
-const CURRENT_NETWORK_KEY = 'lanscape_current_network'
 
 // IndexedDB document name prefix - namespaced per user
 const IDB_DOC_PREFIX = 'lanscape-chat'
@@ -48,7 +42,7 @@ export type ChatClientState = {
   channels: ChatChannel[]
   messages: ChatMessage[]
   currentChannelId: string | null
-  isOnline: boolean  // WebRTC peer connectivity status
+  isOnline: boolean  // Peer connectivity status
   persistenceReady: boolean  // IndexedDB loaded
 }
 
@@ -60,84 +54,12 @@ function generateId(): string {
 }
 
 /**
- * Get the current network from localStorage, or fetch and use the first network if none is selected
- */
-async function getCurrentNetwork(): Promise<Network | null> {
-  // Try to get from localStorage first
-  const stored = localStorage.getItem(CURRENT_NETWORK_KEY)
-  if (stored) {
-    try {
-      const network = JSON.parse(stored) as Network
-      console.log('[ChatClient] Using stored network:', network.name)
-      return network
-    } catch (error) {
-      console.error('[ChatClient] Failed to parse stored network:', error)
-      localStorage.removeItem(CURRENT_NETWORK_KEY)
-    }
-  }
-
-  // If no network is stored, fetch networks and use the first one
-  try {
-    const networks = await fetchNetworks()
-    if (networks.length > 0) {
-      const firstNetwork = networks[0]
-      console.log('[ChatClient] No network selected, using first network:', firstNetwork.name)
-      // Store it for future use
-      localStorage.setItem(CURRENT_NETWORK_KEY, JSON.stringify(firstNetwork))
-      return firstNetwork
-    }
-  } catch (error) {
-    console.error('[ChatClient] Failed to fetch networks:', error)
-  }
-
-  return null
-}
-
-/**
- * Build signaling URL from network name
- * Format: wss://signaling.<network name>.tsnet.jxh.io
- */
-function buildSignalingUrl(networkName: string | null): string {
-  // If environment variable is set, use it (allows override)
-  if (import.meta.env.VITE_SIGNALING_URL) {
-    return import.meta.env.VITE_SIGNALING_URL
-  }
-
-  // If no network name, fall back to default
-  if (!networkName) {
-    console.warn('[ChatClient] No network name, using default signaling URL')
-    return DEFAULT_SIGNALING_URL
-  }
-
-  // Build URL: wss://signaling.<network name>.tsnet.jxh.io
-  const url = `wss://signaling.${networkName}.tsnet.jxh.io`
-  console.log('[ChatClient] Built signaling URL from network:', url)
-  return url
-}
-
-/**
- * Build TURN server URL from network name
- * Format: turn.<network name>.tsnet.jxh.io
- */
-function buildTurnUrl(networkName: string | null): string | null {
-  // If no network name, don't use TURN server
-  if (!networkName) {
-    return null
-  }
-
-  // Build URL: turn.<network name>.tsnet.jxh.io
-  const url = `turn.${networkName}.tsnet.jxh.io`
-  console.log('[ChatClient] Built TURN server URL from network:', url)
-  return url
-}
-
-/**
  * ChatClient manages the chat connection and state outside of React.
  * This prevents React Strict Mode double-renders from causing duplicate connections.
  */
 export class ChatClient {
   private doc: Y.Doc | null = null
-  private transport: WebRTCTransport | null = null
+  private transport: StubTransport | null = null
   private sync: YjsSync | null = null
   private persistence: IndexeddbPersistence | null = null
   private currentUserId: string | null = null
@@ -261,26 +183,9 @@ export class ChatClient {
         this.syncMessagesFromYjs()
       })
 
-      // Get current network and build signaling URL
-      const network = await getCurrentNetwork()
-      const signalingUrl = buildSignalingUrl(network?.name || null)
-      const turnUrl = buildTurnUrl(network?.name || null)
-
-      // Normalize signaling URL
-      let wsUrl = signalingUrl.trim()
-      if (wsUrl.startsWith('http://')) {
-        wsUrl = wsUrl.replace('http://', 'ws://')
-      } else if (wsUrl.startsWith('https://')) {
-        wsUrl = wsUrl.replace('https://', 'wss://')
-      } else if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
-        wsUrl = `ws://${wsUrl}`
-      }
-
-      // Create transport and connect
-      const transport = new WebRTCTransport({
-        signalingUrl: wsUrl,
+      // Create transport (stub - actual implementation will be added later)
+      const transport = new StubTransport({
         topic: DEFAULT_TOPIC,
-        turnUrl: turnUrl || undefined,
       })
       this.transport = transport
 
@@ -334,7 +239,7 @@ export class ChatClient {
           return a.name.localeCompare(b.name)
         })
 
-        // Online if we have peers (other than self) or if signaling is connected
+        // Online if we have peers (other than self)
         const hasOtherPeers = memberList.length > 1 || states.size > 0
         const isOnline = transport.getConnectedPeers().length > 0 || hasOtherPeers
 
@@ -360,7 +265,7 @@ export class ChatClient {
       this.syncChannelsFromYjs()
       this.setCurrentChannel('general')
 
-      // Set initial member list - mark as online since signaling is connected
+      // Set initial member list
       this.setState({
         members: [{
           id: username,

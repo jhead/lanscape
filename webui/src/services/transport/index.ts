@@ -6,5 +6,5 @@ export type {
   Peer,
 } from './PeerTransport'
 
-export { WebRTCTransport } from './WebRTCTransport'
+export { StubTransport } from './StubTransport'
 

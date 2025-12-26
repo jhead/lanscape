@@ -11,7 +11,7 @@ interface ChatContextType {
   connecting: boolean
   error: string | null
   selfId: string | null
-  isOnline: boolean  // WebRTC peer connectivity status
+  isOnline: boolean  // Peer connectivity status
   persistenceReady: boolean  // IndexedDB loaded
 
   // Members (from awareness)

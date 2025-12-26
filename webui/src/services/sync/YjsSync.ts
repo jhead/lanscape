@@ -29,7 +29,7 @@ export type AwarenessChangeHandler = (states: Map<string, AwarenessState>) => vo
  * - Broadcast updates to all connected peers
  * - Broadcast awareness periodically and on change
  * 
- * This is transport-agnostic - works with WebRTC, WebSocket, or any PeerTransport.
+ * This is transport-agnostic - works with any PeerTransport implementation.
  */
 export class YjsSync {
   private doc: Y.Doc
