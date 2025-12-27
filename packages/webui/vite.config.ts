@@ -8,6 +8,9 @@ export default defineConfig({
   define: {
     'process.env': '{}', // Polyfill/placeholder, safe by default, does not expose actual env
   },
+  optimizeDeps: {
+    include: ['@lanscape/chat']
+  },
   server: {
     proxy: {
       '/v1/': {
