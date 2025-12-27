@@ -1,0 +1,29 @@
+{
+  "name": "@lanscape/chat",
+  "version": "0.1.0",
+  "description": "Lanscape chat client SDK",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "yjs": "^13.6.28"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3"
+  }
+}
+

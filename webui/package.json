@@ -9,12 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@lanscape/chat": "workspace:*",
     "lucide-react": "^0.562.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "y-indexeddb": "^9.0.12",
-    "yjs": "^13.6.28"
+    "y-indexeddb": "^9.0.12"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

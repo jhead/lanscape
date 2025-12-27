@@ -344,3 +344,4 @@ export class YjsSync {
     this.awarenessHandlers.clear()
   }
 }
+
