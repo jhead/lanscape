@@ -3,25 +3,26 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json pnpm-lock.yaml ./
+# Copy workspace root files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy packages directory (needed for workspace dependencies like @lanscape/chat)
+COPY packages ./packages
 
 # Install pnpm and dependencies
 # Corepack will automatically use the version specified in package.json packageManager field
 RUN corepack enable
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
-COPY . .
-
-# Build the application
+# Build the webui package
+WORKDIR /app/packages/webui
 RUN pnpm run build
 
 # Production stage
 FROM nginx:alpine
 
 # Copy built assets from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/packages/webui/dist /usr/share/nginx/html
 
 # Copy nginx configuration for SPA routing
 RUN echo 'server { \

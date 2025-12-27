@@ -8,14 +8,14 @@ on:
     tags:
       - 'v*'
     paths:
-      - 'webui/**'
+      - 'packages/webui/**'
       - '.github/workflows/docker-build-webui.yml'
   pull_request:
     branches:
       - main
       - master
     paths:
-      - 'webui/**'
+      - 'packages/webui/**'
       - '.github/workflows/docker-build-webui.yml'
   workflow_dispatch:
 
@@ -60,8 +60,8 @@ jobs:
       - name: Build and push webui image
         uses: docker/build-push-action@v5
         with:
-          context: ./webui
-          file: ./webui/Dockerfile
+          context: .
+          file: ./packages/webui/Dockerfile
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

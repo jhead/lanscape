@@ -58,8 +58,8 @@ To use local images instead of pulling from GitHub Container Registry:
 
 1. Build images locally:
    ```bash
-   cd webui && docker build -t lanscape-webui .
-   cd ../lanscaped && docker build -t lanscape-daemon .
+   docker build -f packages/webui/Dockerfile -t lanscape-webui .
+   cd lanscaped && docker build -t lanscape-daemon .
    ```
 
 2. Update `docker-compose.yml` to use local images:
