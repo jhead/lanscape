@@ -14,9 +14,13 @@ COPY packages ./packages
 RUN corepack enable
 RUN pnpm install --frozen-lockfile
 
+# Build workspace dependencies first
+# The chat package must be built before webui since webui depends on it
+WORKDIR /app
+RUN pnpm --filter '@lanscape/chat' build
+
 # Build the webui package
-WORKDIR /app/packages/webui
-RUN pnpm run build
+RUN pnpm --filter webui build
 
 # Production stage
 FROM nginx:alpine

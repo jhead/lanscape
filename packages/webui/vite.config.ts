@@ -9,7 +9,14 @@ export default defineConfig({
     'process.env': '{}', // Polyfill/placeholder, safe by default, does not expose actual env
   },
   optimizeDeps: {
-    include: ['@lanscape/chat']
+    include: ['@lanscape/chat', 'y-indexeddb']
+  },
+  build: {
+    rollupOptions: {
+      // Externalize y-indexeddb - it's dynamically imported in the chat package
+      // and should be resolved at runtime from node_modules
+      external: ['y-indexeddb']
+    }
   },
   server: {
     proxy: {

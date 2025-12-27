@@ -32,7 +32,7 @@ export class IndexedDBPersistence implements PersistenceProvider {
     if (!this.IndexeddbPersistenceClass) {
       try {
         // @ts-ignore
-        const module = await import('y-indexeddb')
+        const module = await import(/* @vite-ignore */'y-indexeddb')
         this.IndexeddbPersistenceClass = module.IndexeddbPersistence as IndexeddbPersistenceType
       } catch (error) {
         throw new Error(
