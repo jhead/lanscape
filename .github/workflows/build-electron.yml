@@ -1,0 +1,183 @@
+name: Build and Release Electron App
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+    paths:
+      - 'packages/electron/**'
+      - 'packages/webui/**'
+      - 'lanscape-agent/**'
+      - '.github/workflows/build-electron.yml'
+  pull_request:
+    branches:
+      - main
+      - master
+    paths:
+      - 'packages/electron/**'
+      - 'packages/webui/**'
+      - 'lanscape-agent/**'
+      - '.github/workflows/build-electron.yml'
+  workflow_dispatch:
+
+env:
+  PNPM_VERSION: 10.26.1
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build webui
+        run: pnpm --filter webui build
+
+      - name: Build agent binaries for macOS
+        run: |
+          cd lanscape-agent
+          GOOS=darwin GOARCH=amd64 go build -o ../packages/electron/resources/lanscape-agent-darwin-amd64 ./cmd/lanscape-agent
+          GOOS=darwin GOARCH=arm64 go build -o ../packages/electron/resources/lanscape-agent-darwin-arm64 ./cmd/lanscape-agent
+
+      - name: Build Electron app for macOS
+        run: |
+          cd packages/electron
+          pnpm build
+          pnpm copy:webui
+          pnpm exec electron-builder --mac --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-macos
+          path: packages/electron/dist-electron/**
+          retention-days: 30
+
+  build-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build webui
+        run: pnpm --filter webui build
+
+      - name: Build agent binaries for Windows
+        shell: pwsh
+        run: |
+          cd lanscape-agent
+          go env -w CGO_ENABLED=0
+          $env:GOOS="windows"; $env:GOARCH="amd64"; go build -o ../packages/electron/resources/lanscape-agent-windows-amd64.exe ./cmd/lanscape-agent
+          $env:GOOS="windows"; $env:GOARCH="arm64"; go build -o ../packages/electron/resources/lanscape-agent-windows-arm64.exe ./cmd/lanscape-agent
+
+      - name: Build Electron app for Windows
+        run: |
+          cd packages/electron
+          pnpm build
+          pnpm copy:webui
+          pnpm exec electron-builder --win --publish never
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: false
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-windows
+          path: packages/electron/dist-electron/**
+          retention-days: 30
+
+  release:
+    needs: [build-macos, build-windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download macOS artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-macos
+          path: dist/macos
+
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: electron-windows
+          path: dist/windows
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/macos/**
+            dist/windows/**
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifacts to workflow run
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-builds
+          path: |
+            dist/macos/**
+            dist/windows/**
+          retention-days: 7
+

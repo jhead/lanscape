@@ -47,13 +47,17 @@ function getAgentBinaryPath(): string {
   if (app.isPackaged) {
     // In production, binary is in resources directory
     const resourcesPath = process.resourcesPath
+    const platform = process.platform === 'win32' ? 'windows' : 'darwin'
     const arch = process.arch === 'arm64' ? 'arm64' : 'amd64'
-    return path.join(resourcesPath, 'resources', `lanscape-agent-${arch}`)
+    const ext = process.platform === 'win32' ? '.exe' : ''
+    return path.join(resourcesPath, 'resources', `lanscape-agent-${platform}-${arch}${ext}`)
   } else {
     // In development, try multiple paths:
     // 1. Built binary in resources directory
+    const platform = process.platform === 'win32' ? 'windows' : 'darwin'
     const arch = process.arch === 'arm64' ? 'arm64' : 'amd64'
-    const devPath = path.join(__dirname, '..', 'resources', `lanscape-agent-${arch}`)
+    const ext = process.platform === 'win32' ? '.exe' : ''
+    const devPath = path.join(__dirname, '..', 'resources', `lanscape-agent-${platform}-${arch}${ext}`)
     if (fs.existsSync(devPath)) {
       return devPath
     }

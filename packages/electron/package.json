@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "tsc && electron .",
     "build": "tsc",
-    "build:agent": "cd ../../lanscape-agent && GOOS=darwin GOARCH=amd64 go build -o ../packages/electron/resources/lanscape-agent-amd64 ./cmd/lanscape-agent && GOOS=darwin GOARCH=arm64 go build -o ../packages/electron/resources/lanscape-agent-arm64 ./cmd/lanscape-agent",
-    "copy:webui": "test -d ../webui/dist && cp -r ../webui/dist ./dist/webui || (echo 'Warning: webui/dist not found, run pnpm --filter webui build first' && mkdir -p ./dist/webui)",
+    "build:agent:mac": "cd ../../lanscape-agent && GOOS=darwin GOARCH=amd64 go build -o ../packages/electron/resources/lanscape-agent-darwin-amd64 ./cmd/lanscape-agent && GOOS=darwin GOARCH=arm64 go build -o ../packages/electron/resources/lanscape-agent-darwin-arm64 ./cmd/lanscape-agent",
+    "build:agent:win": "cd ../../lanscape-agent && GOOS=windows GOARCH=amd64 go build -o ../packages/electron/resources/lanscape-agent-windows-amd64.exe ./cmd/lanscape-agent && GOOS=windows GOARCH=arm64 go build -o ../packages/electron/resources/lanscape-agent-windows-arm64.exe ./cmd/lanscape-agent",
+    "build:agent": "pnpm build:agent:mac && pnpm build:agent:win",
+    "copy:webui": "node scripts/copy-webui.js",
     "build:full": "pnpm build && pnpm copy:webui",
     "dist": "pnpm build:full && electron-builder",
     "dist:mac": "pnpm build:full && electron-builder --mac"
@@ -35,6 +37,18 @@
         }
       ],
       "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ]
     },
     "files": [
       "dist/**/*",
