@@ -166,7 +166,17 @@ export class YjsSync {
 
         case 'message':
           if (event.peerId && event.data) {
+            console.log('[YjsSync] Received message event', {
+              peerId: event.peerId,
+              dataSize: event.data.byteLength,
+              firstByte: new Uint8Array(event.data)[0],
+            })
             this.handleMessage(event.peerId, event.data)
+          } else {
+            console.warn('[YjsSync] Message event missing peerId or data', {
+              hasPeerId: !!event.peerId,
+              hasData: !!event.data,
+            })
           }
           break
 
@@ -236,10 +246,20 @@ export class YjsSync {
 
   private handleMessage(peerId: string, data: ArrayBuffer): void {
     const message = new Uint8Array(data)
-    if (message.length === 0) return
+    if (message.length === 0) {
+      console.warn('[YjsSync] Received empty message from:', peerId)
+      return
+    }
 
     const messageType = message[0]
     const payload = message.slice(1)
+
+    console.log('[YjsSync] Handling message', {
+      peerId,
+      messageType,
+      payloadSize: payload.length,
+      totalSize: message.length,
+    })
 
     switch (messageType) {
       case MSG_SYNC_REQUEST:
@@ -260,11 +280,12 @@ export class YjsSync {
         break
 
       case MSG_AWARENESS:
+        console.log('[YjsSync] Received awareness from:', peerId)
         this.handleAwareness(peerId, payload)
         break
 
       default:
-        console.warn('[YjsSync] Unknown message type:', messageType)
+        console.warn('[YjsSync] Unknown message type:', messageType, 'from:', peerId)
     }
   }
 

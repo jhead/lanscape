@@ -1,12 +1,10 @@
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
-import { WebRTCTransport } from '../transport'
+import { WebSocketTransport } from '../transport'
 import { YjsSync, AwarenessState } from '../sync'
 import { getCurrentUser, fetchNetworks } from '../../utils/api'
 import type { Network } from '../../types'
 
-// Default signaling URL from environment or fallback
-const DEFAULT_SIGNALING_URL = import.meta.env.VITE_SIGNALING_URL || 'ws://localhost:8081'
 const DEFAULT_TOPIC = import.meta.env.VITE_CHAT_TOPIC || 'lanscape-chat'
 
 // localStorage key for current network (matches NetworkContext)
@@ -93,43 +91,6 @@ async function getCurrentNetwork(): Promise<Network | null> {
   return null
 }
 
-/**
- * Build signaling URL from network name
- * Format: wss://signaling.<network name>.tsnet.jxh.io
- */
-function buildSignalingUrl(networkName: string | null): string {
-  // If environment variable is set, use it (allows override)
-  if (import.meta.env.VITE_SIGNALING_URL) {
-    return import.meta.env.VITE_SIGNALING_URL
-  }
-
-  // If no network name, fall back to default
-  if (!networkName) {
-    console.warn('[ChatClient] No network name, using default signaling URL')
-    return DEFAULT_SIGNALING_URL
-  }
-
-  // Build URL: wss://signaling.<network name>.tsnet.jxh.io
-  const url = `wss://signaling.${networkName}.tsnet.jxh.io`
-  console.log('[ChatClient] Built signaling URL from network:', url)
-  return url
-}
-
-/**
- * Build TURN server URL from network name
- * Format: turn.<network name>.tsnet.jxh.io
- */
-function buildTurnUrl(networkName: string | null): string | null {
-  // If no network name, don't use TURN server
-  if (!networkName) {
-    return null
-  }
-
-  // Build URL: turn.<network name>.tsnet.jxh.io
-  const url = `turn.${networkName}.tsnet.jxh.io`
-  console.log('[ChatClient] Built TURN server URL from network:', url)
-  return url
-}
 
 /**
  * ChatClient manages the chat connection and state outside of React.
@@ -137,7 +98,7 @@ function buildTurnUrl(networkName: string | null): string | null {
  */
 export class ChatClient {
   private doc: Y.Doc | null = null
-  private transport: WebRTCTransport | null = null
+  private transport: WebSocketTransport | null = null
   private sync: YjsSync | null = null
   private persistence: IndexeddbPersistence | null = null
   private currentUserId: string | null = null
@@ -261,26 +222,13 @@ export class ChatClient {
         this.syncMessagesFromYjs()
       })
 
-      // Get current network and build signaling URL
-      const network = await getCurrentNetwork()
-      const signalingUrl = buildSignalingUrl(network?.name || null)
-      const turnUrl = buildTurnUrl(network?.name || null)
-
-      // Normalize signaling URL
-      let wsUrl = signalingUrl.trim()
-      if (wsUrl.startsWith('http://')) {
-        wsUrl = wsUrl.replace('http://', 'ws://')
-      } else if (wsUrl.startsWith('https://')) {
-        wsUrl = wsUrl.replace('https://', 'wss://')
-      } else if (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://')) {
-        wsUrl = `ws://${wsUrl}`
-      }
+      // Get agent WebSocket URL (default to localhost:8082)
+      const agentUrl = import.meta.env.VITE_AGENT_URL || 'ws://localhost:8082'
+      console.log('[ChatClient] Connecting to agent:', agentUrl)
 
       // Create transport and connect
-      const transport = new WebRTCTransport({
-        signalingUrl: wsUrl,
-        topic: DEFAULT_TOPIC,
-        turnUrl: turnUrl || undefined,
+      const transport = new WebSocketTransport({
+        agentUrl: agentUrl,
       })
       this.transport = transport
 

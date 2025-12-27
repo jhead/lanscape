@@ -6,5 +6,6 @@ export type {
   Peer,
 } from './PeerTransport'
 
-export { WebRTCTransport } from './WebRTCTransport'
+export { WebSocketTransport } from './WebSocketTransport'
+export type { WebSocketTransportConfig } from './WebSocketTransport'
 

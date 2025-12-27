@@ -554,6 +554,7 @@ export class WebRTCSignalingClient {
     // Create RTCPeerConnection
     const pc = new RTCPeerConnection({
       iceServers,
+      iceTransportPolicy: 'relay',
     })
 
     const peerConn: PeerConnection = {
