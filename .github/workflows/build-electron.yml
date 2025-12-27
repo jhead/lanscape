@@ -54,7 +54,9 @@ jobs:
         run: pnpm --filter @lanscape/chat build
 
       - name: Build webui
-        run: pnpm --filter webui build
+        run: ELECTRON=true pnpm --filter webui build
+        env:
+          ELECTRON: 'true'
 
       - name: Build agent binaries for macOS
         run: |
@@ -71,11 +73,36 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload macOS artifacts
+      - name: Upload macOS x64 DMG
         uses: actions/upload-artifact@v4
         with:
-          name: electron-macos
-          path: packages/electron/dist-electron/**
+          name: Lanscape-mac-x64.dmg
+          path: packages/electron/dist-electron/*.dmg
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload macOS ARM64 DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lanscape-mac-arm64.dmg
+          path: packages/electron/dist-electron/*-arm64.dmg
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload macOS x64 ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lanscape-mac-x64.zip
+          path: packages/electron/dist-electron/*-mac.zip
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload macOS ARM64 ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lanscape-mac-arm64.zip
+          path: packages/electron/dist-electron/*-arm64-mac.zip
+          if-no-files-found: ignore
           retention-days: 30
 
   build-windows:
@@ -108,7 +135,9 @@ jobs:
         run: pnpm --filter @lanscape/chat build
 
       - name: Build webui
-        run: pnpm --filter webui build
+        run: ELECTRON=true pnpm --filter webui build
+        env:
+          ELECTRON: 'true'
 
       - name: Build agent binaries for Windows
         shell: pwsh
@@ -127,11 +156,36 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
-      - name: Upload Windows artifacts
+      - name: Upload Windows x64 NSIS
         uses: actions/upload-artifact@v4
         with:
-          name: electron-windows
-          path: packages/electron/dist-electron/**
+          name: Lanscape-win-x64.exe
+          path: packages/electron/dist-electron/*.exe
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload Windows ARM64 NSIS
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lanscape-win-arm64.exe
+          path: packages/electron/dist-electron/*-arm64.exe
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload Windows x64 ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lanscape-win-x64.zip
+          path: packages/electron/dist-electron/*-win.zip
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Upload Windows ARM64 ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: Lanscape-win-arm64.zip
+          path: packages/electron/dist-electron/*-arm64-win.zip
+          if-no-files-found: ignore
           retention-days: 30
 
   release:
@@ -148,14 +202,16 @@ jobs:
       - name: Download macOS artifacts
         uses: actions/download-artifact@v4
         with:
-          name: electron-macos
+          pattern: Lanscape-mac-*
           path: dist/macos
+          merge-multiple: true
 
       - name: Download Windows artifacts
         uses: actions/download-artifact@v4
         with:
-          name: electron-windows
+          pattern: Lanscape-win-*
           path: dist/windows
+          merge-multiple: true
 
       - name: Create Release
         if: startsWith(github.ref, 'refs/tags/v')

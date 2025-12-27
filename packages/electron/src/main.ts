@@ -191,26 +191,14 @@ function createWindow(): void {
 
   // Load the webui
   if (app.isPackaged) {
-    // In production, try multiple possible paths for webui dist
-    const possiblePaths = [
-      path.join(__dirname, 'webui', 'index.html'), // Copied to dist/webui
-      path.join(process.resourcesPath, 'app', 'webui', 'index.html'), // In app.asar
-      path.join(process.resourcesPath, 'webui', 'dist', 'index.html'), // In resources
-    ]
-    
-    let loaded = false
-    for (const webuiPath of possiblePaths) {
-      if (fs.existsSync(webuiPath)) {
-        console.log('[Electron] Loading webui from:', webuiPath)
-        mainWindow.loadFile(webuiPath)
-        loaded = true
-        break
-      }
-    }
-    
-    if (!loaded) {
-      console.error('[Electron] Could not find webui dist in any expected location')
-      console.error('[Electron] Tried paths:', possiblePaths)
+    // In production, webui is copied to dist/webui and included in app.asar
+    // __dirname points to the app.asar/dist directory
+    const webuiPath = path.join(__dirname, 'webui', 'index.html')
+    if (fs.existsSync(webuiPath)) {
+      console.log('[Electron] Loading webui from:', webuiPath)
+      mainWindow.loadFile(webuiPath)
+    } else {
+      console.error('[Electron] Could not find webui dist at:', webuiPath)
       // Fallback: try to load from dev server (might work if it's running)
       mainWindow.loadURL('http://localhost:5173')
     }
