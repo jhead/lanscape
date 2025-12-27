@@ -22,11 +22,11 @@ importers:
         specifier: ~5.9.3
         version: 5.9.3
 
-  webui:
+  packages/webui:
     dependencies:
       '@lanscape/chat':
         specifier: workspace:*
-        version: link:../packages/chat
+        version: link:../chat
       lucide-react:
         specifier: ^0.562.0
         version: 0.562.0(react@18.3.1)
