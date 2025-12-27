@@ -23,9 +23,6 @@ on:
       - '.github/workflows/build-electron.yml'
   workflow_dispatch:
 
-env:
-  PNPM_VERSION: 10.26.1
-
 jobs:
   build-macos:
     runs-on: macos-latest
@@ -38,8 +35,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -91,8 +86,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
