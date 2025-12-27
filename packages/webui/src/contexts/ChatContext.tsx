@@ -69,7 +69,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
 
     const unsubscribeMessages = client.onMessage((message) => {
       // Update messages if it's for the current channel
-      if (message.channelId === currentChannelId) {
+      if (message.channelId === currentChannelId && currentChannelId) {
         const channelMessages = client.getMessages(currentChannelId)
         setMessages(channelMessages)
       }
@@ -83,7 +83,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Update messages when current channel changes
   useEffect(() => {
     if (currentChannelId && state.connected) {
-      const channelMessages = client.getMessages(currentChannelId)
+      const channelMessages = client.getMessages(currentChannelId!)
       setMessages(channelMessages)
     } else {
       setMessages([])
@@ -97,7 +97,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
       client.connect().then(() => {
         // Set default channel after connection
         if (!currentChannelId && state.channels.length > 0) {
-          const generalChannel = state.channels.find(c => c.id === 'general') || state.channels[0]
+          const generalChannel = state.channels.find((c: ChatChannel) => c.id === 'general') || state.channels[0]
           setCurrentChannelId(generalChannel.id)
         }
       })
@@ -109,7 +109,7 @@ export function ChatProvider({ children }: { children: ReactNode }) {
   // Set default channel when channels become available
   useEffect(() => {
     if (state.connected && !currentChannelId && state.channels.length > 0) {
-      const generalChannel = state.channels.find(c => c.id === 'general') || state.channels[0]
+      const generalChannel = state.channels.find((c: ChatChannel) => c.id === 'general') || state.channels[0]
       setCurrentChannelId(generalChannel.id)
     }
   }, [state.connected, state.channels, currentChannelId])
