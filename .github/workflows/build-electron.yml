@@ -54,7 +54,7 @@ jobs:
         run: pnpm --filter @lanscape/chat build
 
       - name: Build webui
-        run: ELECTRON=true pnpm --filter webui build
+        run: pnpm --filter webui build
         env:
           ELECTRON: 'true'
 
@@ -135,7 +135,7 @@ jobs:
         run: pnpm --filter @lanscape/chat build
 
       - name: Build webui
-        run: ELECTRON=true pnpm --filter webui build
+        run: pnpm --filter webui build
         env:
           ELECTRON: 'true'
 
