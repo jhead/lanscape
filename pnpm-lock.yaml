@@ -23,14 +23,13 @@ importers:
         version: 5.9.3
 
   packages/electron:
-    dependencies:
-      electron:
-        specifier: ^33.0.0
-        version: 33.4.11
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
         version: 22.19.3
+      electron:
+        specifier: ^33.0.0
+        version: 33.4.11
       electron-builder:
         specifier: ^25.1.8
         version: 25.1.8(electron-builder-squirrel-windows@25.1.8)
