@@ -1,6 +1,8 @@
 {
   "name": "@lanscape/electron",
   "version": "0.0.0",
+  "description": "Lanscape Electron desktop application",
+  "author": "jxh",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
@@ -14,11 +16,9 @@
     "dist": "pnpm build:full && electron-builder",
     "dist:mac": "pnpm build:full && electron-builder --mac"
   },
-  "dependencies": {
-    "electron": "^33.0.0"
-  },
   "devDependencies": {
     "@types/node": "^22.10.2",
+    "electron": "^33.0.0",
     "electron-builder": "^25.1.8",
     "typescript": "~5.9.3"
   },
