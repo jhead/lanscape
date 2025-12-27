@@ -1,0 +1,55 @@
+{
+  "name": "@lanscape/electron",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "build:agent": "cd ../../lanscape-agent && GOOS=darwin GOARCH=amd64 go build -o ../packages/electron/resources/lanscape-agent-amd64 ./cmd/lanscape-agent && GOOS=darwin GOARCH=arm64 go build -o ../packages/electron/resources/lanscape-agent-arm64 ./cmd/lanscape-agent",
+    "copy:webui": "test -d ../webui/dist && cp -r ../webui/dist ./dist/webui || (echo 'Warning: webui/dist not found, run pnpm --filter webui build first' && mkdir -p ./dist/webui)",
+    "build:full": "pnpm build && pnpm copy:webui",
+    "dist": "pnpm build:full && electron-builder",
+    "dist:mac": "pnpm build:full && electron-builder --mac"
+  },
+  "dependencies": {
+    "electron": "^33.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "electron-builder": "^25.1.8",
+    "typescript": "~5.9.3"
+  },
+  "build": {
+    "appId": "io.jxh.lanscape",
+    "productName": "Lanscape",
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64", "arm64"]
+        }
+      ],
+      "category": "public.app-category.utilities"
+    },
+    "files": [
+      "dist/**/*",
+      "resources/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "resources",
+        "filter": ["**/*"]
+      }
+    ],
+    "directories": {
+      "output": "dist-electron"
+    }
+  }
+}
+

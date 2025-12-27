@@ -7,7 +7,10 @@
   "scripts": {
     "build": "pnpm -r build",
     "dev": "pnpm -r --parallel dev",
-    "clean": "pnpm -r exec rm -rf node_modules dist"
+    "clean": "pnpm -r exec rm -rf node_modules dist",
+    "electron:dev": "pnpm --filter webui dev & pnpm --filter @lanscape/electron dev",
+    "electron:build": "pnpm --filter webui build && pnpm --filter @lanscape/electron build:agent && pnpm --filter @lanscape/electron build:full && pnpm --filter @lanscape/electron dist",
+    "electron:build:agent": "pnpm --filter @lanscape/electron build:agent"
   },
   "devDependencies": {
     "typescript": "~5.9.3"

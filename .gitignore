@@ -55,3 +55,8 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Electron build artifacts
+packages/electron/dist-electron/
+packages/electron/resources/lanscape-agent-*
+packages/electron/dist/webui/
+

@@ -126,8 +126,23 @@ class ChatClient {
       return this.client.connect()
     }
 
-    // Get agent WebSocket URL (default to localhost:8082)
-    const agentUrl = import.meta.env.VITE_AGENT_URL || 'ws://localhost:8082'
+    // Get agent WebSocket URL
+    // In Electron, get port dynamically via IPC
+    // Otherwise use env var or default to localhost:8082
+    let agentUrl = import.meta.env.VITE_AGENT_URL || 'ws://localhost:8082'
+    
+    // Check if we're in Electron
+    if (typeof window !== 'undefined' && window.electron) {
+      try {
+        const port = await window.electron.getAgentPort()
+        agentUrl = `ws://localhost:${port}`
+        console.log('[ChatClient] Using Electron agent port:', port)
+      } catch (error) {
+        console.warn('[ChatClient] Failed to get agent port from Electron, using default:', error)
+        // Fallback to default port
+        agentUrl = 'ws://localhost:8082'
+      }
+    }
 
     // Get user info first to create per-user persistence
     const userInfo = await getCurrentUser()
