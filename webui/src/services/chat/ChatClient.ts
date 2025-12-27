@@ -46,7 +46,7 @@ export type ChatClientState = {
   channels: ChatChannel[]
   messages: ChatMessage[]
   currentChannelId: string | null
-  isOnline: boolean  // WebRTC peer connectivity status
+  isOnline: boolean  // Peer connectivity status
   persistenceReady: boolean  // IndexedDB loaded
 }
 
