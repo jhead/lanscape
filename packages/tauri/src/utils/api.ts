@@ -17,6 +17,7 @@ import {
   convertAssertion,
   base64URLToArrayBuffer,
 } from './webauthn'
+import { fetch } from '@tauri-apps/plugin-http'
 
 // Determine API base URL
 // In Electron (file:// protocol), we must use absolute URLs
@@ -62,7 +63,6 @@ export async function checkAuthStatus(): Promise<boolean> {
     console.log('[API] Checking authentication status...')
     const response = await fetch(`${API_BASE_URL}/v1/auth/test`, {
       method: 'GET',
-      credentials: 'include',
     })
     
     if (response.ok) {
@@ -87,7 +87,6 @@ export async function registerUser(username: string): Promise<FinishRegistration
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({ username }),
   })
 
@@ -119,7 +118,6 @@ export async function registerUser(username: string): Promise<FinishRegistration
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       username,
       session: beginData.session,
@@ -146,7 +144,6 @@ export async function loginUser(username: string): Promise<FinishLoginResponse> 
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({ username }),
   })
 
@@ -190,7 +187,6 @@ export async function loginUser(username: string): Promise<FinishLoginResponse> 
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       username,
       session: beginData.session,
@@ -213,7 +209,6 @@ export async function fetchNetworks(): Promise<Network[]> {
   console.log('[API] Fetching networks...')
   const response = await fetch(`${API_BASE_URL}/v1/networks`, {
     method: 'GET',
-    credentials: 'include',
   })
   
   if (!response.ok) {
@@ -233,7 +228,6 @@ export async function createNetwork(name: string, endpoint: string, apiKey: stri
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       name,
       headscale_endpoint: endpoint,
@@ -256,7 +250,6 @@ export async function joinNetwork(networkId: number): Promise<void> {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
   })
   
   if (!response.ok) {
@@ -271,7 +264,6 @@ export async function deleteNetwork(networkId: number): Promise<void> {
   console.log('[API] Deleting network:', networkId)
   const response = await fetch(`${API_BASE_URL}/v1/networks/${networkId}`, {
     method: 'DELETE',
-    credentials: 'include',
   })
   
   if (!response.ok) {
@@ -289,7 +281,6 @@ export async function logoutUser(): Promise<LogoutResponse> {
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
   })
 
   if (!response.ok) {
@@ -307,7 +298,6 @@ export async function getCurrentUser(): Promise<{ user_handle: string }> {
   console.log('[API] Fetching current user info...')
   const response = await fetch(`${API_BASE_URL}/v1/me`, {
     method: 'GET',
-    credentials: 'include',
   })
   
   if (!response.ok) {
@@ -328,7 +318,6 @@ export async function adoptDevice(networkId: number, name?: string, platform?: s
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       network_id: networkId,
       name,

@@ -142,6 +142,9 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// Auth routes
 	mux.HandleFunc("POST /v1/auth/logout", routes.HandleLogout)
+	mux.HandleFunc("POST /v1/auth/oidc/callback", func(w http.ResponseWriter, r *http.Request) {
+		routes.HandleOIDCCallback(w, r, s.jwtService, s.store)
+	})
 
 	// Protected routes (require JWT)
 	jwtMiddleware := middleware.JWTAuthMiddleware(s.jwtService)
@@ -166,11 +169,6 @@ func (s *Server) registerRoutes(mux *http.ServeMux) {
 
 	// Me endpoint (require JWT)
 	mux.Handle("GET /v1/me", jwtMiddleware(http.HandlerFunc(routes.HandleMe)))
-
-	// Token endpoint (require JWT) - mints new JWT token with network-specific JID for XMPP auth
-	mux.Handle("GET /v1/auth/token", jwtMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		routes.HandleGetToken(w, r, s.jwtService, s.store)
-	})))
 
 	// JWKS endpoints (public, no auth required)
 	mux.HandleFunc("GET /.well-known/lanscape.jwks.json", func(w http.ResponseWriter, r *http.Request) {

@@ -1,0 +1,57 @@
+.network-manager {
+  min-height: 100vh;
+  background: #0a0a0a;
+  padding: 2rem;
+}
+
+.network-manager-header {
+  max-width: 800px;
+  margin: 0 auto 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #27272a;
+}
+
+.network-manager-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #ffffff;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.network-manager-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.nav-link {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: #a1a1aa;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.nav-link:hover {
+  color: #e4e4e7;
+  background: #27272a;
+}
+
+.nav-link.active {
+  color: #ffffff;
+  background: #3f3f46;
+  border-color: #52525b;
+}
+
+.network-manager-content {
+  max-width: 800px;
+  margin: 0 auto;
+}

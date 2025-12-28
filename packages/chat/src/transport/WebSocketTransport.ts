@@ -1,7 +1,10 @@
 import { PeerTransport, PeerTransportEvent, PeerTransportListener, Peer } from './PeerTransport'
+import { WebSocketProvider, WebSocketLike, WebSocketReadyState } from './WebSocketProvider'
+import { BrowserWebSocketProvider } from './BrowserWebSocketProvider'
 
 export interface WebSocketTransportConfig {
   agentUrl: string // e.g., 'ws://localhost:8082'
+  websocketProvider?: WebSocketProvider // Optional provider, defaults to BrowserWebSocketProvider
 }
 
 // Protocol message types
@@ -25,11 +28,12 @@ interface AgentMessage {
  * The agent handles all WebRTC operations and enforces Tailscale interface usage.
  */
 export class WebSocketTransport implements PeerTransport {
-  private ws: WebSocket | null = null
+  private ws: WebSocketLike | null = null
   private listeners = new Set<PeerTransportListener>()
   private selfId: string | null = null
   private connectedPeers = new Set<string>()
   private config: WebSocketTransportConfig
+  private websocketProvider: WebSocketProvider
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private reconnectDelay = 1000
@@ -37,13 +41,14 @@ export class WebSocketTransport implements PeerTransport {
 
   constructor(config: WebSocketTransportConfig) {
     this.config = config
+    this.websocketProvider = config.websocketProvider || new BrowserWebSocketProvider()
   }
 
   /**
    * Connect to the agent WebSocket server
    */
   async connect(): Promise<void> {
-    if (this.ws?.readyState === WebSocket.OPEN) {
+    if (this.ws?.readyState === WebSocketReadyState.OPEN) {
       console.log('[WebSocketTransport] Already connected')
       return
     }
@@ -55,39 +60,52 @@ export class WebSocketTransport implements PeerTransport {
     const wsUrl = this.config.agentUrl
     console.log('[WebSocketTransport] Connecting to agent:', wsUrl)
 
-    return new Promise((resolve, reject) => {
-      try {
-        this.ws = new WebSocket(wsUrl)
+    try {
+      this.ws = await this.websocketProvider.create(wsUrl)
 
-        this.ws.onopen = () => {
+      if (!this.ws) {
+        throw new Error('Failed to create WebSocket')
+      }
+
+      return new Promise((resolve, reject) => {
+        const onOpen = () => {
           console.log('[WebSocketTransport] Connected to agent')
           this.reconnectAttempts = 0
           resolve()
         }
 
-        this.ws.onmessage = (event) => {
+        const onMessage = (event: any) => {
           this.handleMessage(event)
         }
 
-        this.ws.onerror = (error) => {
+        const onError = (error: any) => {
           console.error('[WebSocketTransport] WebSocket error:', error)
           this.emit({ type: 'error', error: new Error('WebSocket error') })
-          if (this.ws?.readyState !== WebSocket.OPEN) {
+          if (this.ws?.readyState !== WebSocketReadyState.OPEN) {
             reject(new Error('WebSocket connection failed'))
           }
         }
 
-        this.ws.onclose = () => {
+        const onClose = () => {
           console.log('[WebSocketTransport] Disconnected from agent')
           this.ws = null
           if (!this.destroyed) {
             this.attemptReconnect()
           }
         }
-      } catch (error) {
-        reject(error)
-      }
-    })
+
+        if (this.ws) {
+          this.ws.addEventListener('open', onOpen)
+          this.ws.addEventListener('message', onMessage)
+          this.ws.addEventListener('error', onError)
+          this.ws.addEventListener('close', onClose)
+        } else {
+          reject(new Error('Failed to create WebSocket'))
+        }
+      })
+    } catch (error) {
+      throw error
+    }
   }
 
   /**
@@ -113,7 +131,7 @@ export class WebSocketTransport implements PeerTransport {
     console.log(`[WebSocketTransport] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
 
     setTimeout(() => {
-      if (!this.destroyed && (!this.ws || this.ws.readyState === WebSocket.CLOSED)) {
+      if (!this.destroyed && (!this.ws || this.ws.readyState === WebSocketReadyState.CLOSED)) {
         this.connect().catch((error) => {
           console.error('[WebSocketTransport] Reconnect failed:', error)
         })
@@ -225,7 +243,7 @@ export class WebSocketTransport implements PeerTransport {
   }
 
   private sendMessage(msg: BrowserMessage): void {
-    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
+    if (!this.ws || this.ws.readyState !== WebSocketReadyState.OPEN) {
       console.warn('[WebSocketTransport] Cannot send message, not connected')
       return
     }

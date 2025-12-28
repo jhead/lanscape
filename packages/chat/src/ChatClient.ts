@@ -1,5 +1,5 @@
 import * as Y from 'yjs'
-import { WebSocketTransport } from './transport'
+import { WebSocketTransport, WebSocketProvider } from './transport'
 import { YjsSync, AwarenessState } from './sync'
 import { PersistenceProvider, MemoryPersistence } from './persistence'
 
@@ -88,6 +88,13 @@ export interface ChatClientConfig {
    * For Node.js/Bun, use a custom implementation or in-memory.
    */
   persistence?: PersistenceProvider
+  
+  /**
+   * Optional WebSocket provider.
+   * If not provided, uses BrowserWebSocketProvider (standard browser WebSocket API).
+   * For Tauri apps, use TauriWebSocketProvider.
+   */
+  websocketProvider?: WebSocketProvider
 }
 
 /**
@@ -113,6 +120,13 @@ export interface ChatClientAdvancedConfig {
    * For Node.js/Bun, use a custom implementation or in-memory.
    */
   persistence?: PersistenceProvider
+  
+  /**
+   * Optional WebSocket provider.
+   * If not provided, uses BrowserWebSocketProvider (standard browser WebSocket API).
+   * For Tauri apps, use TauriWebSocketProvider.
+   */
+  websocketProvider?: WebSocketProvider
 }
 
 // Generate a simple unique ID
@@ -360,6 +374,7 @@ export class ChatClient {
       // Create transport and connect
       const transport = new WebSocketTransport({
         agentUrl: agentUrl,
+        websocketProvider: this.config.websocketProvider,
       })
       this.transport = transport
 

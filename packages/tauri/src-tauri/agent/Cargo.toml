@@ -1,0 +1,24 @@
+[package]
+name = "lanscape-agent"
+version = "0.1.0"
+edition = "2021"
+authors = ["jxh"]
+description = "Lanscape WebRTC agent for peer-to-peer communication"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+anyhow = "1"
+tracing = "0.1"
+webrtc = "0.11"
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+futures-util = "0.3"
+ipnetwork = "0.20"
+which = "6"
+if-addrs = "0.10"
+url = "2.5"
+uuid = { version = "1", features = ["v4"] }
+axum = { version = "0.7", features = ["ws"] }
+bytes = "1"
+

@@ -1,0 +1,35 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://*"
+        },
+        {
+          "url": "http://*"
+        }
+      ]
+    },
+    {
+      "identifier": "http:default",
+      "allow": [
+        {
+          "url": "https://auth.lanscape.jxh.io/*"
+        },
+        {
+          "url": "https://lanscape.jxh.io/*"
+        },
+        {
+          "url": "http://localhost:*"
+        }
+      ]
+    },
+    "websocket:default"
+  ]
+}

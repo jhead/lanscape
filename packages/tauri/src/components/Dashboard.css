@@ -1,0 +1,40 @@
+.dashboard-wrapper {
+  position: relative;
+}
+
+.dashboard-nav {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  display: flex;
+  gap: 0.5rem;
+  background: rgba(24, 24, 27, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: 1px solid #27272a;
+}
+
+.dashboard-nav .nav-link {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #a1a1aa;
+  background: transparent;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+}
+
+.dashboard-nav .nav-link:hover {
+  color: #e4e4e7;
+  background: #27272a;
+}
+
+.dashboard-nav .nav-link.active {
+  color: #ffffff;
+  background: #3f3f46;
+  border-color: #52525b;
+}
