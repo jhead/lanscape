@@ -1,0 +1,8 @@
+---
+alwaysApply: true
+---
+If you encounter obstacles during your task that prevent you from completing it, pause and ask the user for assistance or clarification; never make assumptions.
+
+Never write superfluous documentation, especially when completing individual tasks/features. All documentation should be high level, low churn, and stored under the root level `docs` directory.
+
+Avoid creating complex fallback logic that works under multiple scenarios other than the primary use-case. For instance, when writing deserialization logic, strictly follow the expected schema rather than creating flexible fallback logic that tries different combinations and possibilities; instead, prefer rigid, fail fast logic with clear error handling.

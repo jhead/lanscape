@@ -1,0 +1,6 @@
+---
+globs: *.ts,*.tsx,*.js,*.css
+alwaysApply: false
+---
+Always componentize UI into small, clean, maintainable React components with clearly defined APIs (i.e. props, context).
+Always refer to @docs/ux.md for the UI design style guidelines and principles.

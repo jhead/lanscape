@@ -1,0 +1,8 @@
+---
+globs: *.rs,Cargo.toml
+alwaysApply: false
+---
+Always use `cargo add` to install Rust dependencies; avoid editing Cargo.toml manually.
+Always check a crate's documentation for APIs and features for the most relevant info.
+Avoid using statics, thread locals, and global state in Rust when possible. 
+Always run `cargo check` throughout implementation to find and fix errors early; never complete your task with compilation errors remaining.
