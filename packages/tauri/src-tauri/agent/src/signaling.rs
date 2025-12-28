@@ -221,7 +221,7 @@ impl SignalingClient {
                 }
             }
             "offer" => {
-                Self::handle_offer(&msg, webrtc, self_id, signaling_client).await?;
+                Self::handle_offer(&msg, webrtc, signaling_client).await?;
             }
             "answer" => {
                 Self::handle_answer(&msg, webrtc).await?;
@@ -280,30 +280,20 @@ impl SignalingClient {
     async fn handle_offer(
         msg: &OutboundMessage,
         webrtc: &Arc<WebRTCManager>,
-        self_id: &Arc<RwLock<Option<String>>>,
         signaling_client: &Arc<SignalingClient>,
     ) -> Result<()> {
         let peer_id = msg.from.as_ref().context("Missing 'from' in offer message")?;
         info!("Received offer: from={}", peer_id);
 
         // Get or create peer connection
-        let peer = webrtc.get_peer_connection(peer_id).await;
-        let peer = if peer.is_err() {
+        let _peer = if webrtc.get_peer_connection(peer_id).await.is_err() {
             // Create peer connection as responder
             webrtc
                 .create_peer_connection(peer_id.clone(), false)
                 .await?
         } else {
-            peer?
+            webrtc.get_peer_connection(peer_id).await?
         };
-
-        // Check if we already have a local offer (collision case)
-        // Use perfect negotiation: compare peer IDs to determine who is "polite"
-        let self_id_guard = self_id.read().await;
-        let self_id_val = self_id_guard.as_ref();
-        let is_polite = self_id_val
-            .map(|s| s.as_str() < peer_id.as_str())
-            .unwrap_or(false);
 
         // Note: We can't easily check signaling state in webrtc-rs, so we'll
         // just handle the offer. If there's a collision, we'll close and recreate.

@@ -4,7 +4,6 @@ use crate::tailscale::TailscaleInfo;
 use crate::webrtc::{WebRTCManager, RTCIceCandidate};
 use anyhow::Result;
 use std::sync::Arc;
-use tracing::info;
 
 /// BrowserSession represents a single browser connection with its own WebRTC and signaling
 pub struct BrowserSession {

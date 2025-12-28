@@ -2,7 +2,6 @@ use crate::tailscale::{get_tailscale_info_optional, TailscaleInfo};
 use crate::websocket::WebSocketServer;
 use anyhow::Result;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use tracing::info;
 
 /// Config holds agent configuration
@@ -34,7 +33,6 @@ impl Config {
 /// Agent orchestrates all components
 pub struct Agent {
     ws_server: Arc<WebSocketServer>,
-    tailscale_info: Option<TailscaleInfo>,
 }
 
 impl Agent {
@@ -49,7 +47,6 @@ impl Agent {
 
         Ok(Self {
             ws_server,
-            tailscale_info: config.tailscale_info,
         })
     }
 

@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use ipnetwork::IpNetwork;
-use std::net::{IpAddr, Ipv4Addr, Ipv6Addr};
+use std::net::IpAddr;
 use std::process::Command;
-use tracing::{debug, info, warn};
+use tracing::{info, warn};
 
 #[derive(Debug, Clone)]
 pub struct TailscaleInfo {

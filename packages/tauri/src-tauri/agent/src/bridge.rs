@@ -3,7 +3,7 @@ use crate::webrtc::WebRTCManager;
 use anyhow::Result;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{debug, error, info, warn};
+use tracing::{error, info, warn};
 
 pub type BrowserSendCallback = Box<dyn Fn(AgentMessage) -> Result<()> + Send + Sync>;
 
@@ -33,7 +33,6 @@ impl Bridge {
                 .set_on_data_channel(Box::new(move |peer_id: String, dc: Arc<webrtc::data_channel::RTCDataChannel>| {
                     let data_channels = data_channels.clone();
                     let browser_send = browser_send.clone();
-                    let peer_id_clone = peer_id.clone();
                     let dc_clone = dc.clone();
 
                     Box::pin(async move {
@@ -112,7 +111,6 @@ impl Bridge {
         });
 
         let webrtc_peer_connected = webrtc.clone();
-        let browser_send_peer_connected = bridge.browser_send.clone();
         tokio::spawn(async move {
             webrtc_peer_connected
                 .set_on_peer_connected(Box::new(move |peer_id: String| {

@@ -31,7 +31,6 @@ pub type OnICECandidateCallback = Box<dyn Fn(String, RTCIceCandidate) -> Pin<Box
 pub struct WebRTCManager {
     peers: Arc<RwLock<HashMap<String, Arc<PeerConnection>>>>,
     api: Arc<webrtc::api::API>,
-    tailscale_info: Option<TailscaleInfo>,
     on_data_channel: Arc<RwLock<Option<OnDataChannelCallback>>>,
     on_peer_connected: Arc<RwLock<Option<OnPeerConnectedCallback>>>,
     on_peer_closed: Arc<RwLock<Option<OnPeerClosedCallback>>>,
@@ -71,7 +70,6 @@ impl WebRTCManager {
         Ok(Self {
             peers: Arc::new(RwLock::new(HashMap::new())),
             api: Arc::new(api),
-            tailscale_info,
             on_data_channel: Arc::new(RwLock::new(None)),
             on_peer_connected: Arc::new(RwLock::new(None)),
             on_peer_closed: Arc::new(RwLock::new(None)),
@@ -241,18 +239,12 @@ impl WebRTCManager {
         let peer_id_open = peer_id.to_string();
         let peer_id_close = peer_id.to_string();
         let peer_id_error = peer_id.to_string();
-        let on_data_channel = self.on_data_channel.clone();
 
         dc.on_open(Box::new(move || {
             let peer_id = peer_id_open.clone();
-            let on_data_channel = on_data_channel.clone();
             
             Box::pin(async move {
                 info!("Data channel opened: peer={}", peer_id);
-                if let Some(ref callback) = *on_data_channel.read().await {
-                    // Re-notify on open
-                    // The data channel is already registered, but we notify again
-                }
             })
         }));
 
