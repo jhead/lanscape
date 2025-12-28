@@ -27,6 +27,9 @@ importers:
       '@lanscape/chat':
         specifier: workspace:*
         version: link:../chat
+      '@lanscape/webui':
+        specifier: workspace:*
+        version: link:../webui
       '@tauri-apps/api':
         specifier: ^2
         version: 2.9.1
