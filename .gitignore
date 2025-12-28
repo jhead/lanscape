@@ -54,9 +54,3 @@ pnpm-debug.log*
 # Mac/Linux OS junk files
 .DS_Store
 Thumbs.db
-
-# Electron build artifacts
-packages/electron/dist-electron/
-packages/electron/resources/lanscape-agent-*
-packages/electron/dist/webui/
-

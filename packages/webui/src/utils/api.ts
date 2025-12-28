@@ -20,8 +20,7 @@ import {
 import { getPlatform } from '../services/platform'
 
 // Determine API base URL
-// In Electron (file:// protocol), we must use absolute URLs
-// Otherwise, use env var or default to relative URLs (for same-origin)
+// Use env var or default to relative URLs (for same-origin)
 function getApiBaseUrl(): string {
   // If explicitly set via env var, use it
   if (import.meta.env.VITE_API_URL) {
@@ -29,24 +28,9 @@ function getApiBaseUrl(): string {
   }
   
   if (typeof window !== 'undefined') {
-    // Check if we're in Electron
-    const isElectron = window.electron || window.location.protocol === 'file:'
-    
-    if (isElectron) {
-      // In Electron development (loading from localhost:5173), use localhost API
-      // In Electron production (file:// protocol), use production URL
-      if (window.location.protocol === 'file:') {
-        // Packaged app - use production URL
-        return 'https://lanscape.jxh.io'
-      } else {
-        // Development mode - loading from Vite dev server
-        return 'http://localhost:8080'
-      }
-    }
-    
-    // Regular browser - check if we're in development
+    // Check if we're in development
     if (import.meta.env.DEV || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-      // Development mode in browser - use localhost API
+      // Development mode - use localhost API
       return 'http://localhost:8080'
     }
   }

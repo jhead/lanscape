@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react'
 // This does NOT expose your local env: it only prevents client-side errors from code or deps that reference process.env.
 export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: process.env.ELECTRON === 'true' ? './' : '/',
+  base: '/',
   define: {
     'process.env': '{}', // Polyfill/placeholder, safe by default, does not expose actual env
   },
