@@ -1,6 +1,7 @@
 import { ChatClient as SDKChatClient, ChatClientState, IndexedDBPersistence } from '@lanscape/chat'
 import { getCurrentUser, fetchNetworks } from '../../utils/api'
 import type { Network } from '../../types'
+import { getPlatform } from '../platform'
 
 // localStorage key for current network (matches NetworkContext)
 const CURRENT_NETWORK_KEY = 'lanscape_current_network'
@@ -126,30 +127,37 @@ class ChatClient {
       return this.client.connect()
     }
 
-    // Get agent WebSocket URL
-    // In Electron, get port dynamically via IPC
-    // Otherwise use env var or default to localhost:8082
-    let agentUrl = import.meta.env.VITE_AGENT_URL || 'ws://localhost:8082'
-    
-    // Check if we're in Electron
-    if (typeof window !== 'undefined' && window.electron) {
-      try {
-        const port = await window.electron.getAgentPort()
-        agentUrl = `ws://localhost:${port}`
-        console.log('[ChatClient] Using Electron agent port:', port)
-      } catch (error) {
-        console.warn('[ChatClient] Failed to get agent port from Electron, using default:', error)
-        // Fallback to default port
-        agentUrl = 'ws://localhost:8082'
-      }
+    const platform = getPlatform()
+
+    // Start the agent (no-op in browser, actual implementation in Tauri)
+    const agentUrl = platform.agentLifecycle.getAgentUrl()
+    try {
+      // Extract host:port from ws://host:port or wss://host:port
+      const urlMatch = agentUrl.match(/^(?:ws|wss):\/\/(.+)$/)
+      const websocketAddr = urlMatch ? urlMatch[1] : 'localhost:8082'
+      
+      await platform.agentLifecycle.startAgent({
+        websocketAddr: websocketAddr,
+        signalingUrl: 'wss://signaling.main.tsnet.jxh.io',
+        topic: 'lanscape-chat',
+      })
+      console.log('[ChatClient] Agent lifecycle initialized')
+    } catch (error) {
+      console.error('[ChatClient] Failed to start agent:', error)
+      // In browser, this is expected - agent might already be running
+      // In Tauri, this would be an error, but we'll let it throw
+      throw error
     }
 
     // Get user info first to create per-user persistence
     const userInfo = await getCurrentUser()
     const userId = userInfo.user_handle || 'anonymous'
     
-    // Create IndexedDB persistence for browser
+    // Create IndexedDB persistence
     const persistence = new IndexedDBPersistence(`lanscape-chat-${userId}`)
+
+    // Get WebSocket provider from platform (if provided)
+    const websocketProvider = platform.websocketProviderFactory?.createProvider()
 
     // Create client with async user info fetching and IndexedDB persistence
     this.client = new SDKChatClient({
@@ -158,6 +166,7 @@ class ChatClient {
       },
       agentUrl: agentUrl,
       persistence: persistence,
+      websocketProvider: websocketProvider,
     })
 
     // Subscribe any pending listeners
@@ -175,10 +184,19 @@ class ChatClient {
   /**
    * Disconnect from chat
    */
-  disconnect(): void {
+  async disconnect(): Promise<void> {
     if (this.client) {
       this.client.disconnect()
       this.client = null
+    }
+
+    // Stop the agent (no-op in browser, actual implementation in Tauri)
+    try {
+      const platform = getPlatform()
+      await platform.agentLifecycle.stopAgent()
+      console.log('[ChatClient] Agent lifecycle stopped')
+    } catch (error) {
+      console.error('[ChatClient] Failed to stop agent:', error)
     }
   }
 

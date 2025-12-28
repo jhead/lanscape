@@ -4,6 +4,22 @@ import { NetworkProvider } from './contexts/NetworkContext'
 import { AuthForm } from './components/AuthForm'
 import { Dashboard } from './components/Dashboard'
 import { NetworkManager } from './components/NetworkManager'
+import { getPlatform } from './services/platform'
+
+/**
+ * Auth component selector based on platform configuration
+ */
+function AuthComponent() {
+  const platform = getPlatform()
+  
+  // Use platform-provided auth component if available
+  if (platform.authComponent) {
+    return platform.authComponent()
+  }
+  
+  // Default to WebAuthn AuthForm
+  return <AuthForm />
+}
 
 function App() {
   const { isAuthenticated } = useAuth()
@@ -21,9 +37,11 @@ function App() {
       ) : (
         <div className="container">
           <h1>Lanscape</h1>
-          <AuthForm />
+          <AuthComponent />
           <p className="info-text">
-            Sign in with passkey or create a new account.
+            {getPlatform().authMethod === 'oidc' 
+              ? 'Sign in with your OIDC provider.'
+              : 'Sign in with passkey or create a new account.'}
           </p>
         </div>
       )}

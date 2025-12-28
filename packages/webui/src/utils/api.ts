@@ -17,6 +17,7 @@ import {
   convertAssertion,
   base64URLToArrayBuffer,
 } from './webauthn'
+import { getPlatform } from '../services/platform'
 
 // Determine API base URL
 // In Electron (file:// protocol), we must use absolute URLs
@@ -56,13 +57,21 @@ function getApiBaseUrl(): string {
 
 const API_BASE_URL = getApiBaseUrl()
 
+/**
+ * Platform-agnostic fetch helper
+ * Uses the platform's HTTP client
+ */
+async function platformFetch(url: string, options?: RequestInit): Promise<Response> {
+  const platform = getPlatform()
+  return platform.httpClient.fetch(url, options)
+}
+
 // Check authentication status
 export async function checkAuthStatus(): Promise<boolean> {
   try {
     console.log('[API] Checking authentication status...')
-    const response = await fetch(`${API_BASE_URL}/v1/auth/test`, {
+    const response = await platformFetch(`${API_BASE_URL}/v1/auth/test`, {
       method: 'GET',
-      credentials: 'include',
     })
     
     if (response.ok) {
@@ -82,12 +91,11 @@ export async function checkAuthStatus(): Promise<boolean> {
 export async function registerUser(username: string): Promise<FinishRegistrationResponse> {
   console.log('[API] Starting registration for user:', username)
   // Step 1: Begin registration
-  const beginResponse = await fetch(`${API_BASE_URL}/v1/webauthn/register/begin`, {
+  const beginResponse = await platformFetch(`${API_BASE_URL}/v1/webauthn/register/begin`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({ username }),
   })
 
@@ -114,12 +122,11 @@ export async function registerUser(username: string): Promise<FinishRegistration
 
   // Step 3: Finish registration
   const credentialData = convertCredential(credential)
-  const finishResponse = await fetch(`${API_BASE_URL}/v1/webauthn/register/finish`, {
+  const finishResponse = await platformFetch(`${API_BASE_URL}/v1/webauthn/register/finish`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       username,
       session: beginData.session,
@@ -141,12 +148,11 @@ export async function registerUser(username: string): Promise<FinishRegistration
 export async function loginUser(username: string): Promise<FinishLoginResponse> {
   console.log('[API] Starting login for user:', username)
   // Step 1: Begin login
-  const beginResponse = await fetch(`${API_BASE_URL}/v1/webauthn/login/begin`, {
+  const beginResponse = await platformFetch(`${API_BASE_URL}/v1/webauthn/login/begin`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({ username }),
   })
 
@@ -185,12 +191,11 @@ export async function loginUser(username: string): Promise<FinishLoginResponse> 
 
   // Step 3: Finish login
   const assertionData = convertAssertion(credential)
-  const finishResponse = await fetch(`${API_BASE_URL}/v1/webauthn/login/finish`, {
+  const finishResponse = await platformFetch(`${API_BASE_URL}/v1/webauthn/login/finish`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       username,
       session: beginData.session,
@@ -211,9 +216,8 @@ export async function loginUser(username: string): Promise<FinishLoginResponse> 
 // Fetch networks
 export async function fetchNetworks(): Promise<Network[]> {
   console.log('[API] Fetching networks...')
-  const response = await fetch(`${API_BASE_URL}/v1/networks`, {
+  const response = await platformFetch(`${API_BASE_URL}/v1/networks`, {
     method: 'GET',
-    credentials: 'include',
   })
   
   if (!response.ok) {
@@ -228,12 +232,11 @@ export async function fetchNetworks(): Promise<Network[]> {
 // Create network
 export async function createNetwork(name: string, endpoint: string, apiKey: string): Promise<void> {
   console.log('[API] Creating network:', name)
-  const response = await fetch(`${API_BASE_URL}/v1/networks`, {
+  const response = await platformFetch(`${API_BASE_URL}/v1/networks`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       name,
       headscale_endpoint: endpoint,
@@ -251,12 +254,11 @@ export async function createNetwork(name: string, endpoint: string, apiKey: stri
 // Join network
 export async function joinNetwork(networkId: number): Promise<void> {
   console.log('[API] Joining network:', networkId)
-  const response = await fetch(`${API_BASE_URL}/v1/networks/${networkId}/join`, {
+  const response = await platformFetch(`${API_BASE_URL}/v1/networks/${networkId}/join`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
   })
   
   if (!response.ok) {
@@ -269,9 +271,8 @@ export async function joinNetwork(networkId: number): Promise<void> {
 // Delete network
 export async function deleteNetwork(networkId: number): Promise<void> {
   console.log('[API] Deleting network:', networkId)
-  const response = await fetch(`${API_BASE_URL}/v1/networks/${networkId}`, {
+  const response = await platformFetch(`${API_BASE_URL}/v1/networks/${networkId}`, {
     method: 'DELETE',
-    credentials: 'include',
   })
   
   if (!response.ok) {
@@ -284,12 +285,11 @@ export async function deleteNetwork(networkId: number): Promise<void> {
 // Logout user
 export async function logoutUser(): Promise<LogoutResponse> {
   console.log('[API] Logging out...')
-  const response = await fetch(`${API_BASE_URL}/v1/auth/logout`, {
+  const response = await platformFetch(`${API_BASE_URL}/v1/auth/logout`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
   })
 
   if (!response.ok) {
@@ -305,9 +305,8 @@ export async function logoutUser(): Promise<LogoutResponse> {
 // Get current user info
 export async function getCurrentUser(): Promise<{ user_handle: string }> {
   console.log('[API] Fetching current user info...')
-  const response = await fetch(`${API_BASE_URL}/v1/me`, {
+  const response = await platformFetch(`${API_BASE_URL}/v1/me`, {
     method: 'GET',
-    credentials: 'include',
   })
   
   if (!response.ok) {
@@ -323,12 +322,11 @@ export async function getCurrentUser(): Promise<{ user_handle: string }> {
 // Adopt device (create preauth key)
 export async function adoptDevice(networkId: number, name?: string, platform?: string): Promise<AdoptDeviceResponse> {
   console.log('[API] Adopting device for network:', networkId)
-  const response = await fetch(`${API_BASE_URL}/v1/devices/adopt`, {
+  const response = await platformFetch(`${API_BASE_URL}/v1/devices/adopt`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
     body: JSON.stringify({
       network_id: networkId,
       name,

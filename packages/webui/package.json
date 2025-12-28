@@ -1,8 +1,18 @@
 {
-  "name": "webui",
+  "name": "@lanscape/webui",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./App": "./src/App.tsx",
+    "./contexts/*": "./src/contexts/*.tsx",
+    "./components/*": "./src/components/*.tsx",
+    "./services/*": "./src/services/*/index.ts",
+    "./utils/*": "./src/utils/*.ts",
+    "./style.css": "./src/style.css"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
